@@ -1,4 +1,4 @@
-# UMK3 Reverse Engineering Studio — v0.4
+# UMK3 Reverse Engineering Studio — v0.7
 
 Aplicativo **local** para investigação de ROMs SNES e **Ultimate Mortal Kombat 3 Deluxe 2.2**. Evolução compatível com as versões v0.1–v0.3; não inclui ROMs comerciais. Interface HTML/CSS/JS local e API FastAPI/Python. A conexão com a internet só é necessária na primeira instalação de dependências Python.
 
@@ -192,3 +192,40 @@ O projeto distribui somente a aplicação e os testes. **As ROMs comerciais e os
 Nova aba DMA / Compression Analyzer, com busca de instruções **candidatas** de escrita em registradores de controle DMA/PPU; filtros do CDL, links para desassembler, comparação exata entre WRAM importada e VRAM e roteiro de captura no Mesen 2.
 
 **Limitações:** as buscas por assinaturas de opcode não fazem reconstrução de fluxo nem conhecem DBR; podem identificar bytes de dados. O registro CDL com bit CODE indica execução da região durante captura, não a validação do alinhamento da instrução. Os arquivos de VRAM e WRAM podem ser de momentos distintos. Não há ainda codec comprovado para sprites do UMK3. Não é implementada alteração da ROM.
+
+## v0.7 — DMA Trace Analyzer (NOVO)
+
+A v0.7 adiciona uma aba **DMA Trace v0.7**, sem remover a análise estática da v0.6. Ela aceita arquivos **CSV** e **JSONL** com eventos explícitos de escrita nos registradores do barramento SNES. Nenhuma ROM ou dump proprietário é distribuído no pacote.
+
+### Como importar
+
+1. Abra `iniciar-windows.cmd`, crie/abra um projeto e entre na aba **DMA Trace v0.7**.
+2. Exporte eventos de **escrita efetiva** de CPU no emulador e salve em CSV ou JSONL. O formato normalizado esperado possui os campos `cycle,pc,address,value,operation`. Valores de endereços e bytes são hexadecimais por padrão (por exemplo `$00:4300`, `80`, `0x01`); prefixo `0d` indica decimal.
+3. Se for um dump textual de instruções do trace logger, ele pode ser carregado, mas será registrado como `cpu_trace_text` e não produzirá transferências inferidas: a presença de `STA $420B` no desassembler não comprova escrita efetiva nem seu valor.
+4. Exporte um trace de escritas nos registradores `$2115–$2119`, `$420B`, `$4300–$437F` e salve-o no formato normalizado. Os valores de canal precisam ter sido escritos/capturados **antes** da ativação de `$420B`.
+5. Clique **Analisar DMA**. O painel mostra origem (`A1B:A1T`), comprimento (`DAS`), canal, registrador de destino (`BBAD`), `DMAP`, possíveis faltas de registros e nível de verificação.
+6. Opcionalmente, importe no Graphics Explorer a VRAM do mesmo instante e no Memory Analyzer uma WRAM sincronizada. A ferramenta compara bytes somente para o caso simplificado, modo 1 A→B, `$2118`, VMAIN `0x80`, cópias sem decremento/fixo e comprimento até 4096 bytes. Um `snapshot_exact_match` é coincidência de snapshots, não prova isolada de DMA.
+
+### Exemplo sintético de CSV
+
+Arquivo: `examples/dma_trace_sintetico.csv`. **Os eventos são artificiais** para testar a interface, não capturados do UMK3. O exemplo prepara o canal 0 com origem WRAM `$7E:2000`, modo 1, registrador `$2118`, 16 bytes e ativa `$420B`.
+
+### API
+
+- `POST /api/dma/trace` — upload e validação de trace até 16 MiB.
+- `GET /api/dma/trace/status` — estado carregado.
+- `GET /api/dma/trace/analyze?max_results=100&capture_id=...` — reconstrução de configurações DMA; WRAM opcional.
+
+O arquivo é persistido por projeto em armazenamento local por hash. Seu conteúdo é armazenado sem alteração, e a análise é recalculada a cada consulta. Projetos reabertos carregam o trace associado.
+
+### Limitações e prioridades técnicas
+
+- Mesen 2 **não garante o formato CSV de bus writes** descrito acima; pode ser necessário adaptar/exportar os eventos do debugger, profiler ou script para o formato normalizado. Não anunciamos conexão remota automática com o Mesen.
+- `JML`, `STA` ou outros opcodes observados num CPU trace não são equivalentes a eventos de escrita; logs sem dados de barramento não produzem transferências.
+- DMA pode usar outros modos, incremento por word/byte, remapeamento VRAM, canais em cascata, escrita inversa e múltiplas atualizações dos registradores. O parser mostra os campos observados, mas só faz comparação de bytes num subconjunto seguro.
+- Um dump de VRAM pós-frame pode diferir do destino de uma transferência registrada anteriormente por atualizações posteriores. Resultado `snapshot_mismatch` não invalida a transferência sem estados sincronizados.
+- **O codec gráfico da Deluxe continua não identificado.** Esta ferramenta é uma investigação de DMA, não um descompressor de sprites.
+
+### Validar
+
+`python -m pytest -q` — **43 testes aprovados**, incluindo 8 testes novos do DMA Trace e todos os testes herdados. JavaScript validado com `node --check`.

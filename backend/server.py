@@ -12,12 +12,13 @@ from fastapi import Form
 from .graphics import validate_dump, decode_cgram, decode_oam, tile_sheet, render_oam, png_bytes
 from .extraction import bank_inventory, match_vram_windows, run_candidates, preview_raw
 from .dma import scan_register_writes, match_staging, dma_observation_plan
+from .dma_trace import analyze_trace
 
-app=FastAPI(title='UMK3 RE Studio',version='0.6.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.7.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
-        self.rom=None; self.comparison=None;self.cdl=None;self.symbols=[];self.project_id=None;self.xrefs=None;self.graphics={}
+        self.rom=None; self.comparison=None;self.cdl=None;self.symbols=[];self.project_id=None;self.xrefs=None;self.graphics={};self.dma_trace=None
 session=Session()
 store=Store()
 
@@ -33,10 +34,12 @@ def load_project(pid):
     data=store.load_artifact(p['comparison_sha']);session.comparison=Rom(data,'ROM original') if data else None
     data=store.load_artifact(p['cdl_sha']);session.cdl=CDL(data,len(session.rom.data)) if data and session.rom else None
     session.symbols=store.symbols(pid,limit=2000);session.xrefs=None
-    session.graphics={}
+    session.graphics={};session.dma_trace=None
     for kind,sha in store.graphics_assets(pid).items():
         raw=store.load_artifact(sha)
-        if raw is not None:session.graphics[kind]=raw
+        if raw is not None:
+            if kind=="dma_trace":session.dma_trace=raw
+            else:session.graphics[kind]=raw
     return p
 
 class ProjectCreate(BaseModel):
@@ -379,3 +382,31 @@ def dma_staging(capture_id:str,chunk_size:int=32,vram_offset:int=0,
 
 @app.get('/api/dma/plan')
 def dma_plan():return dma_observation_plan()
+
+
+# v0.7 — observed bus writes + inferred DMA transfer reconstruction
+@app.get('/api/dma/trace/status')
+def dma_trace_status():
+    return {'loaded':session.dma_trace is not None,
+            'bytes':len(session.dma_trace) if session.dma_trace else 0,
+            'project_id':session.project_id}
+
+@app.post('/api/dma/trace')
+async def dma_trace_upload(file:UploadFile=File(...)):
+    raw=await content(file,16*1024*1024)
+    try:result=analyze_trace(raw,max_results=20)
+    except ValueError as e:raise HTTPException(422,str(e))
+    session.dma_trace=raw
+    if session.project_id:
+        store.save_graphics_asset(session.project_id,'dma_trace',raw,file.filename or 'trace.csv')
+    return {'meta':result['meta'],'dma_triggers':result['dma_triggers'],
+            'register_writes':result['register_writes'],'saved':bool(session.project_id)}
+
+@app.get('/api/dma/trace/analyze')
+def dma_trace_analyze(capture_id:str|None=None,max_results:int=100):
+    if session.dma_trace is None:raise HTTPException(400,'Importe um trace CSV/JSONL')
+    wram=require_capture(capture_id) if capture_id else None
+    try:return analyze_trace(session.dma_trace,
+        rom=session.rom.data if session.rom else None,wram=wram,
+        vram=session.graphics.get('vram'),max_results=max_results)
+    except ValueError as e:raise HTTPException(422,str(e))
