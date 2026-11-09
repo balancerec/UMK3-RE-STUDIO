@@ -90,16 +90,22 @@ def make_ips(original: bytes, modified: bytes) -> bytes:
         while position < end:
             if position > IPS_MAX_OFFSET:
                 raise ValueError("IPS não suporta offsets além de 0xFFFFFF")
-            if position == IPS_EOF:
-                raise ValueError("IPS não pode iniciar um registro em 0x454F46 (marcador EOF)")
-            length = min(65535, end - position)
-            # Avoid leaving the next record at the reserved EOF position.
-            if position < IPS_EOF and position + length == IPS_EOF and length < 65535 and end > IPS_EOF:
-                length += 1
-            data.extend(position.to_bytes(3, "big"))
+            # A byte at 0x454F46 is legal ROM data, but this value cannot
+            # start an IPS record. Include the preceding unchanged byte.
+            record_start = position - 1 if position == IPS_EOF else position
+            length = min(65535, end - record_start)
+            # Avoid placing the next record on the reserved marker.
+            if record_start < IPS_EOF and record_start + length == IPS_EOF and end > IPS_EOF:
+                if length < 65535:
+                    length += 1
+                else:
+                    length -= 1
+            if record_start > IPS_MAX_OFFSET:
+                raise ValueError("IPS não suporta offsets além de 0xFFFFFF")
+            data.extend(record_start.to_bytes(3, "big"))
             data.extend(length.to_bytes(2, "big"))
-            data.extend(modified[position:position + length])
-            position += length
+            data.extend(modified[record_start:record_start + length])
+            position = record_start + length
     data.extend(b"EOF")
     return bytes(data)
 
