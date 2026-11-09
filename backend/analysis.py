@@ -4,20 +4,21 @@ from collections import deque
 from .core import CpuState, decode_one, cpu_to_file, file_to_cpu, next_instruction_offset
 
 
-def build_xrefs(rom,roots,cdl=None,max_instructions=60000,max_entries=250000):
+def build_xrefs(rom,roots,cdl=None,max_instructions=60000,max_entries=250000,initial_state=None):
     """Follow direct static control transfers; indirect transfers and unknown widths remain unresolved.
 
     Calls are recorded and followed while their return-site fallthrough is explored.
     A conditional branch contributes both successors. Byte-level visited state prevents runaway.
     """
-    pending=deque((int(root),CpuState(False,True,True)) for root in roots)
+    initial = initial_state or CpuState(False,True,True)
+    pending=deque((int(root),CpuState(initial.e,initial.m,initial.x,initial.c)) for root in roots)
     seen=set(); refs=[]; ambiguous=[]; count=0
     while pending and count<max_instructions and len(refs)<max_entries:
         start,state=pending.popleft()
         if not 0<=start<len(rom.data):continue
         current=start
         for _ in range(2048):
-            key=(current,state.e,state.m,state.x)
+            key=(current,state.e,state.m,state.x,state.c)
             if key in seen:break
             seen.add(key)
             ins=decode_one(rom.data,current,state,rom.mapping)
@@ -30,7 +31,7 @@ def build_xrefs(rom,roots,cdl=None,max_instructions=60000,max_entries=250000):
             if ins['target'] is not None and ins['flow'] in ('branch','jump','call'):
                 dest=cpu_to_file(ins['target'],rom.mapping)
                 refs.append({'from_offset':current,'from_cpu':ins['cpu'],'to_cpu':ins['target'], 'to_offset':dest if dest is not None and dest<len(rom.data) else None, 'kind':ins['flow'],'mnemonic':ins['mnemonic'], 'cdl_code':cdl.status(current)['code'] if cdl else None})
-                if dest is not None and 0<=dest<len(rom.data):pending.append((dest,CpuState(state.e,state.m,state.x)))
+                if dest is not None and 0<=dest<len(rom.data):pending.append((dest,CpuState(state.e,state.m,state.x,state.c)))
             if ins['flow'] in ('branch','call'):
                 if nxt is not None:pending.append((nxt,CpuState(state.e,state.m,state.x)))
                 break
