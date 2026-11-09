@@ -88,6 +88,7 @@ def test_scan_once_is_bounded_and_round_robin(tmp_path):
 
 
 def test_project_endpoints_and_automatic_detection(tmp_path, monkeypatch):
+    monkeypatch.setenv("UMK3_INTELLIGENCE_POLL_SECONDS", "1")
     store, service, bridge = setup(tmp_path)
     monkeypatch.setattr(intelligence_api, "service", service)
     monkeypatch.setattr(intelligence_api, "bridge", bridge)
