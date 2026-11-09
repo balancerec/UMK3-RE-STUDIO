@@ -1,6 +1,6 @@
-# UMK3 Reverse Engineering Studio — v0.2
+# UMK3 Reverse Engineering Studio — v0.4
 
-Aplicativo **local** para investigação de ROMs SNES e **Ultimate Mortal Kombat 3 Deluxe 2.2**. Evolução da v0.1; não inclui ROMs comerciais. Interface HTML/CSS/JS local e API FastAPI/Python. A conexão com a internet só é necessária na primeira instalação de dependências Python.
+Aplicativo **local** para investigação de ROMs SNES e **Ultimate Mortal Kombat 3 Deluxe 2.2**. Evolução compatível com as versões v0.1–v0.3; não inclui ROMs comerciais. Interface HTML/CSS/JS local e API FastAPI/Python. A conexão com a internet só é necessária na primeira instalação de dependências Python.
 
 ## Executar no Windows
 
@@ -87,3 +87,61 @@ Recursos entregues:
 ### Instalação
 
 A aplicação ainda usa FastAPI com frontend HTML/JS local, conforme as versões anteriores. Execute `iniciar-windows.cmd` com Python 3.12+ ou `iniciar-linux.sh`. Acesse http://127.0.0.1:8000, abra projeto, importe ROM quando desejar e use a aba **Memory Analyzer**. A análise de WRAM não exige ter ROM aberta.
+
+
+## v0.4 — Graphics Explorer
+
+Nova aba **Graphics Explorer**, mantendo as demais funcionalidades da v0.3.
+
+### Importação
+
+- **SnesVideoRam.dmp**: exatamente 65.536 bytes (64 KiB).
+- **SnesCgRam.dmp**: exatamente 512 bytes, 256 cores BGR555.
+- **SnesSpriteRam.dmp**: exatamente 544 bytes, OAM baixa de 512 bytes e alta de 32 bytes.
+
+Arquivos são guardados por projeto no SQLite (metadados) e em armazenamento SHA-256 (conteúdo); ao reabrir o projeto voltam a ficar disponíveis. Também funciona sem projeto, apenas durante a sessão.
+
+### Tile Viewer
+
+- Decodificação planar padrão SNES **2bpp, 4bpp, 8bpp** (8x8 pixels por tile).
+- Offset da VRAM em **bytes hexadecimais**, alinhado a 16/32/64 bytes por tile.
+- Seleção de subpaleta CGRAM, quantidade de linhas/colunas, escala e grade.
+- Geração e exportação real de imagens PNG (recurso de leitura apenas).
+- A VRAM não é um spritesheet e a ordem de tiles só ganha significado quando a tabela de composição é identificada.
+
+### CGRAM / Paletas
+
+- Tabela interativa de 256 cores com conversão **BGR555 → RGB888**; identificação por índice.
+- Não reescreve CGRAM nem ROM; a edição interativa de paletas ficará para versão futura.
+
+### OAM / Sprite Viewer
+
+- 128 entradas OAM e seus bits auxiliares para X de 9 bits e tamanho de OBJ.
+- Posição, tile, prioridade, subpaleta, flips e tabela de nome.
+- Composição aproximada de objetos 4bpp em RGBA com transparência e PNG.
+- Campos configuráveis para OBSEL size mode, base de gráficos OBJ e name-select (offsets VRAM em bytes hexadecimais).
+- **A captura não inclui os registradores PPU**: a base VRAM, name-select e size mode não são recuperados automaticamente. O resultado pode mostrar sprites fragmentados ou incorrectos; a reconstrução final depende dos registradores da mesma captura.
+- Sem BG layers, janela, scanline timing nem raster effects. Não identifica automaticamente personagens ou quadros de animação.
+
+### Endpoints adicionais
+
+- `POST /api/graphics/{vram|cgram|oam}`
+- `GET /api/graphics/status`
+- `GET /api/graphics/palette`
+- `GET /api/graphics/oam`
+- `GET /api/graphics/tiles.png`
+- `GET /api/graphics/sprites.png`
+
+Documentação interativa em `http://127.0.0.1:8000/docs`.
+
+### Executar / validar
+
+```bash
+python -m pip install -r requirements.txt
+python -m pytest -q
+python -m uvicorn backend.server:app --host 127.0.0.1 --port 8000
+```
+
+**Testes nesta versão:** 24 aprovados (inclui testes de API e decodificação gráfica; validação opcional com dumps enviados). JavaScript validado com `node --check`.
+
+**Limites de segurança:** esta aplicação não altera ROMs ou dumps originais, não reconstrói automaticamente imagens de personagens inteiros e não descomprime recursos gráficos de formatos próprios ainda desconhecidos. Nenhuma ROM comercial ou dump pessoal está incluído no ZIP.

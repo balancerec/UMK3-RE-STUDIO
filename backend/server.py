@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from .core import Rom, CDL, parse_mlb, to_mlb, cpu_to_file, file_to_cpu, disassemble, basic_block
@@ -9,12 +9,13 @@ from .storage import Store
 from .analysis import build_xrefs, query_xrefs, seed_roots
 from .memory import extract_wram, pair_compare, candidate_report, breakpoint_plan, WRAM_SIZE, MAPPED_SIZE, CANDIDATES
 from fastapi import Form
+from .graphics import validate_dump, decode_cgram, decode_oam, tile_sheet, render_oam, png_bytes
 
-app=FastAPI(title='UMK3 RE Studio',version='0.3.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.4.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
-        self.rom=None; self.comparison=None;self.cdl=None;self.symbols=[];self.project_id=None;self.xrefs=None
+        self.rom=None; self.comparison=None;self.cdl=None;self.symbols=[];self.project_id=None;self.xrefs=None;self.graphics={}
 session=Session()
 store=Store()
 
@@ -30,6 +31,10 @@ def load_project(pid):
     data=store.load_artifact(p['comparison_sha']);session.comparison=Rom(data,'ROM original') if data else None
     data=store.load_artifact(p['cdl_sha']);session.cdl=CDL(data,len(session.rom.data)) if data and session.rom else None
     session.symbols=store.symbols(pid,limit=2000);session.xrefs=None
+    session.graphics={}
+    for kind,sha in store.graphics_assets(pid).items():
+        raw=store.load_artifact(sha)
+        if raw is not None:session.graphics[kind]=raw
     return p
 
 class ProjectCreate(BaseModel):
@@ -261,3 +266,56 @@ def breakpoints(addresses:str='36D0,52C8'):
             vals.append(value)
         return {'breakpoints':breakpoint_plan(vals)}
     except ValueError as exc:raise HTTPException(422,str(exc))
+
+
+# Graphics Explorer v0.4 (read-only)
+@app.get('/api/graphics/status')
+def graphics_status():
+    return {'sources':{kind:{'bytes':len(raw)} for kind,raw in session.graphics.items()},
+            'vram_required':65536,'cgram_required':512,'oam_required':544,
+            'project_id':session.project_id}
+
+@app.post('/api/graphics/{kind}')
+async def graphics_import(kind:str,file:UploadFile=File(...)):
+    if kind not in ('vram','cgram','oam'):raise HTTPException(422,'Tipo inválido')
+    raw=await content(file,65536)
+    try:validate_dump(kind,raw)
+    except ValueError as e:raise HTTPException(422,str(e))
+    session.graphics[kind]=raw
+    if session.project_id:store.save_graphics_asset(session.project_id,kind,raw,file.filename or kind)
+    return {'type':kind,'bytes':len(raw),'persisted':bool(session.project_id)}
+
+@app.get('/api/graphics/palette')
+def graphics_palette():
+    raw=session.graphics.get('cgram')
+    if raw is None:raise HTTPException(400,'Importe a CGRAM')
+    colors=decode_cgram(raw)
+    return {'colors':[{'index':i,'rgb':list(c),'hex':'#%02X%02X%02X'%c} for i,c in enumerate(colors)]}
+
+@app.get('/api/graphics/oam')
+def graphics_oam(size_mode:int=0,active_only:bool=False):
+    raw=session.graphics.get('oam')
+    if raw is None:raise HTTPException(400,'Importe a OAM')
+    try:objs=decode_oam(raw,size_mode)
+    except ValueError as e:raise HTTPException(422,str(e))
+    if active_only:objs=[o for o in objs if -o['size'] < o['x'] < 256 and o['y']<224]
+    return {'objects':objs,'count':len(objs),'note':'OAM não possui um bit confiável de invisibilidade; a lista por posição é heurística.'}
+
+@app.get('/api/graphics/tiles.png')
+def graphics_tiles(offset:int=0,bpp:int=4,columns:int=16,rows:int=16,palette:int=0,scale:int=2,grid:bool=False,download:bool=False):
+    raw=session.graphics.get('vram')
+    if raw is None:raise HTTPException(400,'Importe a VRAM')
+    if rows*columns>1024 or rows>64 or columns>64:raise HTTPException(422,'Máximo de 1024 tiles')
+    try:img=tile_sheet(raw,session.graphics.get('cgram'),offset=offset,bpp=bpp,columns=columns,rows=rows,palette=palette,scale=scale,grid=grid)
+    except ValueError as e:raise HTTPException(422,str(e))
+    headers={'Content-Disposition':'attachment; filename="umk3_tiles.png"'} if download else {}
+    return Response(png_bytes(img),media_type='image/png',headers=headers)
+
+@app.get('/api/graphics/sprites.png')
+def graphics_sprites(size_mode:int=0,base:int=0,name_select:int=0,scale:int=2,download:bool=False):
+    absent=[x for x in ('vram','cgram','oam') if x not in session.graphics]
+    if absent:raise HTTPException(400,'Importe: '+', '.join(absent))
+    try:img=render_oam(session.graphics['vram'],session.graphics['cgram'],session.graphics['oam'],size_mode=size_mode,base=base,name_select=name_select,scale=scale)
+    except ValueError as e:raise HTTPException(422,str(e))
+    headers={'Content-Disposition':'attachment; filename="umk3_oam_sprites.png"'} if download else {}
+    return Response(png_bytes(img),media_type='image/png',headers=headers)

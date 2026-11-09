@@ -33,6 +33,8 @@ class Store:
                     character TEXT NOT NULL, expected_id INTEGER, filename TEXT NOT NULL, sha TEXT NOT NULL,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE);
+                CREATE TABLE IF NOT EXISTS graphics_assets(project_id TEXT NOT NULL, kind TEXT NOT NULL, sha TEXT NOT NULL, filename TEXT NOT NULL,
+                    PRIMARY KEY(project_id,kind), FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE);
                 CREATE INDEX IF NOT EXISTS idx_captures_project ON captures(project_id);
                 CREATE INDEX IF NOT EXISTS idx_symbols_project ON symbols(project_id);
                 CREATE INDEX IF NOT EXISTS idx_obs_project ON observations(project_id);
@@ -109,3 +111,19 @@ class Store:
     def remove_capture(self,pid,cap):
         with _LOCK,self.connection() as c:
             return c.execute('DELETE FROM captures WHERE project_id=? AND id=?',(pid,cap)).rowcount>0
+
+    def save_graphics_asset(self,pid,kind,raw,filename):
+        if kind not in ('vram','cgram','oam'):raise ValueError('Tipo inválido')
+        if not self.get(pid):raise KeyError(pid)
+        sha=hashlib.sha256(raw).hexdigest()
+        target=self.artifacts/sha
+        if not target.exists():
+            tmp=self.artifacts/(sha+'.tmp'+uuid.uuid4().hex)
+            tmp.write_bytes(raw);tmp.replace(target)
+        with _LOCK,self.connection() as c:
+            c.execute('INSERT OR IGNORE INTO artifacts(sha,size,filename) VALUES(?,?,?)',(sha,len(raw),safe_name(filename)))
+            c.execute('INSERT INTO graphics_assets(project_id,kind,sha,filename) VALUES(?,?,?,?) ON CONFLICT(project_id,kind) DO UPDATE SET sha=excluded.sha,filename=excluded.filename',(pid,kind,sha,safe_name(filename)))
+        return sha
+    def graphics_assets(self,pid):
+        with self.connection() as c:
+            return {r['kind']:r['sha'] for r in c.execute('SELECT kind,sha FROM graphics_assets WHERE project_id=?',(pid,))}
