@@ -78,6 +78,10 @@ def test_size_and_invalid_rom_rejected(tmp_path):
 def test_api_import_status_summary_and_evidence(tmp_path, monkeypatch):
     service = IntelligenceService(tmp_path, executor=InlineExecutor())
     monkeypatch.setattr(intelligence_api, "service", service)
+    from backend.intelligence_projects import ProjectBridge
+    from backend.storage import Store
+    monkeypatch.setattr(intelligence_api, "bridge",
+                        ProjectBridge(Store(tmp_path / "studio"), service))
     with TestClient(intelligence_api.app) as client:
         r = client.post("/api/intelligence/import", files={"file": ("demo.sfc", synthetic_rom())})
         assert r.status_code == 202, r.text
