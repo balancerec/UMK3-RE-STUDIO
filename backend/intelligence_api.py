@@ -5,13 +5,50 @@ Does not hook the existing Studio server or publish ROM contents.
 """
 from __future__ import annotations
 
+import asyncio
+import logging
+import os
 import re
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from .intelligence_core import IntelligenceService, MAX_ROM_BYTES
+from .intelligence_projects import ProjectBridge
+from .storage import Store
 
-app = FastAPI(title="UMK3 Intelligence API", version="0.1.0")
 service = IntelligenceService()
+bridge = ProjectBridge(Store(), service)
 VALID_ID = re.compile(r"^[0-9a-f]{32}$")
+logger = logging.getLogger(__name__)
+
+
+async def _watch_projects():
+    """Read the Studio's persisted project index without modifying its API."""
+    try:
+        interval = max(1.0, min(60.0, float(os.environ.get("UMK3_INTELLIGENCE_POLL_SECONDS", "3"))))
+    except ValueError:
+        interval = 3.0
+    while True:
+        try:
+            await asyncio.to_thread(bridge.scan_once)
+        except Exception:
+            logger.exception("Falha ao examinar projetos do Studio")
+        await asyncio.sleep(interval)
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    task = asyncio.create_task(_watch_projects())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(title="UMK3 Intelligence API", version="0.2.0", lifespan=lifespan)
 
 
 def get_job(job_id: str):
@@ -101,3 +138,50 @@ def evidence(job_id: str, start: int = 0, limit: int = 100, category: str | None
 @app.get("/api/intelligence/health")
 def health():
     return {"status": "ok", "mode": "local_only", "rom_bytes_exposed": False}
+
+
+# Phase 2: existing Studio projects, monitored through SQLite artifact hashes.
+@app.get("/api/intelligence/projects")
+def project_list():
+    return {"projects": bridge.list_statuses()}
+
+
+@app.get("/api/intelligence/projects/{pid}")
+def project_status(pid: str):
+    try:
+        return bridge.status(pid)
+    except KeyError:
+        raise HTTPException(404, "Projeto desconhecido") from None
+
+
+@app.post("/api/intelligence/projects/{pid}/analyze", status_code=202)
+def project_analyze(pid: str):
+    """Manual retry/trigger; automatic scanning also runs via app lifespan."""
+    try:
+        return bridge.scan_project(pid)
+    except KeyError:
+        raise HTTPException(404, "Projeto desconhecido") from None
+
+
+def project_result(pid: str):
+    state = project_status(pid)
+    if not state.get("job_id"):
+        raise HTTPException(409, {"status": state["status"], "error": state.get("error")})
+    return completed_result(state["job_id"])
+
+
+@app.get("/api/intelligence/projects/{pid}/summary")
+def project_summary(pid: str):
+    return project_result(pid)["summary"]
+
+
+@app.get("/api/intelligence/projects/{pid}/evidence")
+def project_evidence(pid: str, start: int = 0, limit: int = 100, category: str | None = None):
+    if start < 0 or not 1 <= limit <= 500:
+        raise HTTPException(422, "Paginação inválida")
+    if category is not None and category not in ("entrypoint", "xref"):
+        raise HTTPException(422, "Categoria inválida")
+    rows = project_result(pid)["evidence"]
+    if category:
+        rows = [e for e in rows if e["category"] == category]
+    return {"total": len(rows), "items": rows[start:start + limit]}
