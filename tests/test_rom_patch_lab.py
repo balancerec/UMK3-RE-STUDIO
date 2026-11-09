@@ -75,3 +75,20 @@ def test_cli_diff_verify_inspect(tmp_path, capsys):
     with pytest.raises(SystemExit) as exc:
         main(["diff", str(before), str(modified), "--ips", str(patch)])
     assert exc.value.code == 2
+
+
+def test_ips_reserved_eof_record_offset():
+    # IPS cannot place a record header at 0x454F46, but must still
+    # encode modifications at that ROM offset.
+    original = bytes(0x800000)
+    changed = bytearray(original)
+    changed[0x454F46] = 0x77
+    result = apply_ips(original, make_ips(original, bytes(changed)))
+    assert result == bytes(changed)
+
+
+def test_ips_crosses_reserved_eof_boundary():
+    original = bytes(0x800000)
+    changed = bytearray(original)
+    changed[0x454F45:0x454F48] = b"ABC"
+    assert apply_ips(original, make_ips(original, bytes(changed))) == bytes(changed)
