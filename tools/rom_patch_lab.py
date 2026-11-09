@@ -44,6 +44,8 @@ def _regions(original: bytes, modified: bytes):
 
 
 def compare_roms(original: bytes, modified: bytes, *, max_regions: int = 200) -> dict:
+    if len(original) != len(modified):
+        raise ValueError("As ROMs precisam ter o mesmo tamanho; redimensionamento não suportado")
     _validate_rom(original)
     _validate_rom(modified)
     if max_regions < 0:
