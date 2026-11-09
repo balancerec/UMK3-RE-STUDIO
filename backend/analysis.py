@@ -1,7 +1,7 @@
 """Conservative evidence-aware xref and CFG analysis; no speculative function naming."""
 from __future__ import annotations
 from collections import deque
-from .core import CpuState, decode_one, cpu_to_file, file_to_cpu
+from .core import CpuState, decode_one, cpu_to_file, file_to_cpu, next_instruction_offset
 
 
 def build_xrefs(rom,roots,cdl=None,max_instructions=60000,max_entries=250000):
@@ -25,17 +25,17 @@ def build_xrefs(rom,roots,cdl=None,max_instructions=60000,max_entries=250000):
             count+=1
             if ins['size'] is None:
                 ambiguous.append({'offset':current,'reason':'M/X unknown'});break
-            nxt=current+ins['size'];state=CpuState(**ins['state_after'])
+            nxt=next_instruction_offset(current,ins['size'],rom.mapping)
+            state=CpuState(**ins['state_after'])
             if ins['target'] is not None and ins['flow'] in ('branch','jump','call'):
                 dest=cpu_to_file(ins['target'],rom.mapping)
                 refs.append({'from_offset':current,'from_cpu':ins['cpu'],'to_cpu':ins['target'], 'to_offset':dest if dest is not None and dest<len(rom.data) else None, 'kind':ins['flow'],'mnemonic':ins['mnemonic'], 'cdl_code':cdl.status(current)['code'] if cdl else None})
                 if dest is not None and 0<=dest<len(rom.data):pending.append((dest,CpuState(state.e,state.m,state.x)))
             if ins['flow'] in ('branch','call'):
-                pending.append((nxt,CpuState(state.e,state.m,state.x)));break
+                if nxt is not None:pending.append((nxt,CpuState(state.e,state.m,state.x)))
+                break
             if ins['flow'] in ('jump','stop','unknown'):break
-            # Do not implicitly continue across a CPU bank boundary.
-            prev_cpu=ins['cpu'];next_cpu=file_to_cpu(nxt,rom.mapping)
-            if prev_cpu is None or next_cpu is None or (prev_cpu>>16)!=(next_cpu>>16):break
+            if nxt is None:break
             current=nxt
             if count>=max_instructions:break
     return {'roots':list(roots),'instructions':count,'references':refs,'ambiguous':ambiguous[:500], 'truncated':bool(pending) or count>=max_instructions, 'limitations':'Direct static transfers only; indirect jumps, call targets under uncertain PBR and unknown CPU M/X states require debugging.'}

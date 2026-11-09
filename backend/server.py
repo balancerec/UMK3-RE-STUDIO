@@ -15,8 +15,9 @@ from .dma import scan_register_writes, match_staging, dma_observation_plan
 from .dma_trace import analyze_trace
 from .capture import convert_capture, capture_audit, capture_plan
 from .correlation import correlate_trace
+from .decompression import compare_pair, scan_hypotheses, region_profile, FORMATS
 
-app=FastAPI(title='UMK3 RE Studio',version='0.9.0')
+app=FastAPI(title='UMK3 RE Studio',version='1.0.1')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
@@ -101,7 +102,9 @@ async def mlb(file:UploadFile=File(...)):
     return {'count':len(session.symbols)}
 
 @app.get('/api/mlb/export')
-def export_mlb():return PlainTextResponse(to_mlb(session.symbols),headers={'Content-Disposition':'attachment; filename="umk3_symbols.mlb"'})
+def export_mlb():
+    rows=store.all_symbols(session.project_id) if session.project_id else session.symbols
+    return PlainTextResponse(to_mlb(rows),headers={'Content-Disposition':'attachment; filename="umk3_symbols.mlb"'})
 
 class NewSymbol(BaseModel):
     type:str='SnesPrgRom';address:int;label:str;comment:str=''
@@ -454,4 +457,49 @@ def correlation_analyze(capture_id:str|None=None,max_results:int=100):
     wram=require_capture(capture_id) if capture_id else None
     try:return correlate_trace(session.dma_trace,rom=session.rom,cdl=session.cdl,
                               wram=wram,vram=session.graphics.get('vram'),max_results=max_results)
+    except ValueError as e:raise HTTPException(422,str(e))
+
+
+# v1.0.1: bounded, read-only graphics decompression hypothesis research.
+class ResearchPair(BaseModel):
+    rom_offset:int
+    target_offset:int
+    length:int=128
+    codec:str='raw'
+    max_input:int=1024
+    preview_limit:int=128
+
+class ResearchScan(BaseModel):
+    rom_start:int
+    rom_length:int=4096
+    target_offset:int
+    target_length:int=64
+    step:int=1
+    codecs:list[str]=['rle_count_value','rle_value_count','packbits']
+    max_input:int=1024
+    max_results:int=20
+
+@app.get('/api/research/status')
+def research_status():
+    return {'rom':session.rom is not None,'vram':'vram' in session.graphics,
+            'codecs':list(FORMATS),'note':'Codecs hipotéticos genéricos; UMK3 não identificado.'}
+
+@app.post('/api/research/pair')
+def research_pair(data:ResearchPair):
+    if not session.rom:raise HTTPException(400,'Importe a ROM')
+    if 'vram' not in session.graphics:raise HTTPException(400,'Importe a VRAM')
+    try:return compare_pair(session.rom.data,session.graphics['vram'],**data.model_dump())
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.post('/api/research/scan')
+def research_scan(data:ResearchScan):
+    if not session.rom:raise HTTPException(400,'Importe a ROM')
+    if 'vram' not in session.graphics:raise HTTPException(400,'Importe a VRAM')
+    try:return scan_hypotheses(session.rom.data,session.graphics['vram'],**data.model_dump())
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.get('/api/research/profile')
+def research_profile(start:int=0,length:int=4096,window:int=256):
+    if not session.rom:raise HTTPException(400,'Importe a ROM')
+    try:return region_profile(session.rom.data,start,length,window)
     except ValueError as e:raise HTTPException(422,str(e))

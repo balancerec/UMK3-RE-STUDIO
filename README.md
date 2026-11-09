@@ -1,4 +1,4 @@
-# UMK3 Reverse Engineering Studio — v0.9
+# UMK3 Reverse Engineering Studio — v1.0.1
 
 Aplicativo **local** para investigação de ROMs SNES e **Ultimate Mortal Kombat 3 Deluxe 2.2**. Evolução compatível com as versões v0.1–v0.3; não inclui ROMs comerciais. Interface HTML/CSS/JS local e API FastAPI/Python. A conexão com a internet só é necessária na primeira instalação de dependências Python.
 
@@ -263,3 +263,14 @@ Endpoints: `GET /api/capture/plan`, `GET /api/capture/script.lua`, `GET /api/cap
 No Mesen 2, importe o script `examples/mesen_dma_capture.lua` (experimental). Capture uma transição de seleção para luta, depois importe o log pela aba Mesen Capture. Abra a nova aba DMA Correlation e clique em **Correlacionar**. Se o log não registrar PC ou eventos de `$420B`, o aplicativo declara a ausência em vez de inventar endereços.
 
 Comandos de teste: `python -m pytest -q`. O ZIP não contém ROM ou dumps de jogo.
+
+
+---
+
+## Atualização v1.0.1 — correções e documentação
+
+Consolidação da v1.0 com pesquisa experimental de compressão gráfica e correções de persistência DMA, PC do 65C816, estados E/M/X e exportação MLB. O projeto **não** inclui ROMs comerciais, sprites licenciados ou dumps privados.
+
+**Documentação:** [Instalação](docs/INSTALL.md) · [Arquitetura](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Captura Mesen](docs/MESEN_CAPTURE.md) · [Dossiê](docs/REVERSE_ENGINEERING.md) · [Limitações](docs/KNOWN_LIMITATIONS.md) · [Changelog](docs/CHANGELOG.md).
+
+Execução local: `iniciar-windows.cmd` e http://127.0.0.1:8000. Testes: `python -m pytest -q`. A sessão é global e **não** há autenticação; jamais exponha essa API em rede pública.

@@ -73,6 +73,13 @@ class Store:
         with self.connection() as c:
             rows=c.execute('SELECT id,memtype AS type,address,label,comment,confidence,provenance FROM symbols WHERE project_id=? AND (label LIKE ? OR printf("%X",address) LIKE ?) ORDER BY address,id LIMIT ?', (pid,'%'+q+'%','%'+q.upper()+'%',min(max(1,limit),2000))).fetchall()
             return [dict(x) for x in rows]
+    def all_symbols(self,pid):
+        """Export complete symbol list, bypassing the UI preview limit."""
+        with self.connection() as c:
+            return [dict(row) for row in c.execute(
+                'SELECT memtype AS type,address,label,comment,confidence,provenance '
+                'FROM symbols WHERE project_id=? ORDER BY address,id',(pid,))]
+
     def add_symbol(self,pid,memtype,address,label,comment='',confidence='unknown',provenance='manual'):
         if not self.get(pid):raise KeyError(pid)
         with _LOCK,self.connection() as c:
@@ -113,7 +120,7 @@ class Store:
             return c.execute('DELETE FROM captures WHERE project_id=? AND id=?',(pid,cap)).rowcount>0
 
     def save_graphics_asset(self,pid,kind,raw,filename):
-        if kind not in ('vram','cgram','oam'):raise ValueError('Tipo inválido')
+        if kind not in ('vram','cgram','oam','dma_trace'):raise ValueError('Tipo inválido')
         if not self.get(pid):raise KeyError(pid)
         sha=hashlib.sha256(raw).hexdigest()
         target=self.artifacts/sha

@@ -166,8 +166,29 @@ class CpuState:
         elif name=='SEP' and operand is not None:
             if operand&0x20:self.m=True
             if operand&0x10:self.x=True
-        elif name in ('PLP','RTI','XCE'):
+        elif name in ('PLP','RTI'):
+            # PLP/RTI restore P, but never change emulation-mode flag E.
+            self.m=True if self.e is True else None
+            self.x=True if self.e is True else None
+        elif name=='XCE':
+            # Carry is not currently tracked, so exchanged E is unknown.
             self.e=None;self.m=None;self.x=None
+
+def next_instruction_offset(offset:int,size:int,mapping='exhirom'):
+    """Sequential 65C816 fetch wraps PC at $FFFF, within the same PBR."""
+    cpu=file_to_cpu(offset,mapping)
+    if cpu is None:return None
+    return cpu_to_file((cpu&0xff0000)|((cpu+size)&0xffff),mapping)
+
+def _instruction_bytes(data:bytes,offset:int,size:int,mapping:str):
+    cpu=file_to_cpu(offset,mapping)
+    if cpu is None:return None
+    result=[]
+    for i in range(size):
+        physical=cpu_to_file((cpu&0xff0000)|((cpu+i)&0xffff),mapping)
+        if physical is None or not 0<=physical<len(data):return None
+        result.append(data[physical])
+    return bytes(result)
 
 def decode_one(data:bytes,offset:int,state:CpuState,mapping='exhirom'):
     if offset>=len(data):return None
@@ -175,8 +196,9 @@ def decode_one(data:bytes,offset:int,state:CpuState,mapping='exhirom'):
     if w is None:
         return {'offset':offset,'cpu':file_to_cpu(offset,mapping),'opcode':f'{opcode:02X}','mnemonic':name,'mode':mode,'bytes':f'{opcode:02X}','size':None,'operand':'? (M/X desconhecido)','ambiguous':True,'flow':'unknown'}
     size=1+w
-    if offset+size>len(data):return None
-    raw=data[offset:offset+size];v=int.from_bytes(raw[1:],'little') if w else 0
+    raw=_instruction_bytes(data,offset,size,mapping)
+    if raw is None:return None
+    v=int.from_bytes(raw[1:],'little') if w else 0
     cpu=file_to_cpu(offset,mapping)
     bank=(cpu>>16) if cpu is not None else 0
     operand=''
@@ -208,7 +230,9 @@ def disassemble(rom:Rom,offset:int,count=64,e=False,m=True,x=True,cdl=None):
         item['cdl']=cdl.status(offset) if cdl else None
         out.append(item)
         if item['size'] is None:break
-        state=CpuState(**item['state_after']);offset+=item['size']
+        state=CpuState(**item['state_after'])
+        offset=next_instruction_offset(offset,item['size'],rom.mapping)
+        if offset is None:break
     return out
 
 def basic_block(rom,offset,e=False,m=True,x=True,limit=512):
@@ -233,12 +257,14 @@ def control_flow(rom:Rom,start:int,e=False,m=True,x=True,max_blocks=80):
             if not inst:break
             block.append(inst)
             if inst['size'] is None:break
-            state=CpuState(**inst['state_after']);position+=inst['size']
+            state=CpuState(**inst['state_after'])
+            position=next_instruction_offset(position,inst['size'],rom.mapping)
+            if position is None:break
             if inst['flow'] in ('branch','jump','stop','unknown','call'):break
         if not block:continue
         last=block[-1]
         nodes.append({'offset':ofs,'cpu':file_to_cpu(ofs,rom.mapping),'instructions':len(block),'end_offset':position,'last_mnemonic':last['mnemonic'],'state':{'e':state.e,'m':state.m,'x':state.x}})
-        if last['flow']=='stop' or last['size'] is None:continue
+        if last['flow']=='stop' or last['size'] is None or position is None:continue
         def edge(next_ofs,kind):
             if next_ofs is None:return
             edges.append({'from':ofs,'to':next_ofs,'kind':kind})
