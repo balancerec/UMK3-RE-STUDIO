@@ -163,24 +163,45 @@ class CpuState:
     e:bool|None=False
     m:bool|None=True
     x:bool|None=True
+    c:bool|None=None  # Carry: tracked when known, unknown for unmodelled flag operations.
+
     def width(self,mode):
         if mode=='immM':return 1 if self.e or self.m else 2 if self.m is False and self.e is False else None
         if mode=='immX':return 1 if self.e or self.x else 2 if self.x is False and self.e is False else None
         return WIDTH.get(mode)
+
     def update(self,name,operand):
-        if name=='REP' and operand is not None:
+        if name=='CLC':
+            self.c=False
+        elif name=='SEC':
+            self.c=True
+        elif name=='REP' and operand is not None:
+            if operand&0x01:self.c=False
             if operand&0x20:self.m=False if self.e is False else True if self.e else None
             if operand&0x10:self.x=False if self.e is False else True if self.e else None
         elif name=='SEP' and operand is not None:
+            if operand&0x01:self.c=True
             if operand&0x20:self.m=True
             if operand&0x10:self.x=True
         elif name in ('PLP','RTI'):
-            # PLP/RTI restore P, but never change emulation-mode flag E.
+            # P restored from the stack; E is not stored in P.
+            self.c=None
             self.m=True if self.e is True else None
             self.x=True if self.e is True else None
         elif name=='XCE':
-            # Carry is not currently tracked, so exchanged E is unknown.
-            self.e=None;self.m=None;self.x=None
+            # 65C816 exchanges C and E. Known CLC; XCE yields native mode.
+            old_e=self.e
+            self.e=self.c
+            self.c=old_e
+            if self.e is True:
+                self.m=True
+                self.x=True
+            elif self.e is None:
+                self.m=None
+                self.x=None
+        elif name in ('ADC','SBC','CMP','CPX','CPY','ASL','LSR','ROL','ROR'):
+            # Carry is data-dependent for these operations; keep it unknown.
+            self.c=None
 
 def next_instruction_offset(offset:int,size:int,mapping='exhirom'):
     """Sequential 65C816 fetch wraps PC at $FFFF, within the same PBR."""
@@ -227,8 +248,8 @@ def decode_one(data:bytes,offset:int,state:CpuState,mapping='exhirom'):
     elif name in ('JSR','JSL'):flow='call'
     elif name in ('RTS','RTL','RTI','STP','BRK','COP'):flow='stop'
     elif mode=='rel8' and name not in ('BRA',):flow='branch'
-    st=CpuState(state.e,state.m,state.x);st.update(name,v if w else None)
-    return {'offset':offset,'cpu':cpu,'opcode':f'{opcode:02X}','mnemonic':name,'mode':mode,'operand':operand,'bytes':raw.hex(' ').upper(),'size':size,'target':target,'flow':flow,'ambiguous':False,'state_after':{'e':st.e,'m':st.m,'x':st.x}}
+    st=CpuState(state.e,state.m,state.x,state.c);st.update(name,v if w else None)
+    return {'offset':offset,'cpu':cpu,'opcode':f'{opcode:02X}','mnemonic':name,'mode':mode,'operand':operand,'bytes':raw.hex(' ').upper(),'size':size,'target':target,'flow':flow,'ambiguous':False,'state_after':{'e':st.e,'m':st.m,'x':st.x,'c':st.c}}
 
 def disassemble(rom:Rom,offset:int,count=64,e=False,m=True,x=True,cdl=None):
     state=CpuState(e,m,x);out=[]
