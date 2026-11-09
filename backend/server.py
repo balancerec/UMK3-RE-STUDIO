@@ -7,8 +7,10 @@ from pydantic import BaseModel
 from .core import Rom, CDL, parse_mlb, to_mlb, cpu_to_file, file_to_cpu, disassemble, basic_block
 from .storage import Store
 from .analysis import build_xrefs, query_xrefs, seed_roots
+from .memory import extract_wram, pair_compare, candidate_report, breakpoint_plan, WRAM_SIZE, MAPPED_SIZE, CANDIDATES
+from fastapi import Form
 
-app=FastAPI(title='UMK3 RE Studio',version='0.2.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.3.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
@@ -190,3 +192,72 @@ def seed_characters():
             for addr in (0x7e36d0,0x7e52c8):
                 store.observe(session.project_id,int(item['id_decimal']),item['name'],addr,int(item['id_decimal']),item['arquivo'],confidence='probable' if 'provavel' in item['name'].lower() else 'observed')
     return {'count':len(store.observations(session.project_id))}
+
+
+@app.get('/api/captures')
+def captures():
+    if not session.project_id:return []
+    return store.captures(session.project_id)
+
+@app.post('/api/captures')
+async def upload_capture(file:UploadFile=File(...),character:str=Form(...),expected_id:str=Form('')):
+    if not session.project_id:raise HTTPException(400,'Crie ou abra um projeto antes')
+    if not character.strip() or len(character)>80:raise HTTPException(422,'Personagem inválido')
+    raw=await content(file,MAPPED_SIZE)
+    try:normalized=extract_wram(raw)
+    except ValueError as exc:raise HTTPException(422,str(exc))
+    if expected_id.strip():
+        try:
+            eid=int(expected_id.strip().removeprefix('0x'),16)
+        except ValueError:raise HTTPException(422,'ID esperado em hexadecimal inválido')
+        if not 0<=eid<=255:raise HTTPException(422,'ID deve estar entre 00 e FF')
+    else:eid=None
+    return store.add_capture(session.project_id,normalized,file.filename or 'WRAM',character.strip(),eid)
+
+@app.delete('/api/captures/{cap}')
+def delete_capture(cap:str):
+    if not session.project_id or not store.remove_capture(session.project_id,cap):raise HTTPException(404,'Captura não encontrada')
+    return {'deleted':True}
+
+def require_capture(cap:str)->bytes:
+    if not session.project_id:raise HTTPException(400,'Abra um projeto')
+    item=store.capture(session.project_id,cap)
+    if not item:raise HTTPException(404,'Captura não encontrada')
+    raw=store.load_artifact(item['sha'])
+    if raw is None or len(raw)!=WRAM_SIZE:raise HTTPException(500,'Arquivo armazenado inválido')
+    return raw
+
+@app.get('/api/captures/compare')
+def compare_captures(left:str,right:str,offset:int=0,length:int=512,width:int=1,limit:int=150):
+    try:return pair_compare(require_capture(left),require_capture(right),offset,length,min(max(1,limit),1000),width)
+    except ValueError as exc:raise HTTPException(422,str(exc))
+
+class CandidateQuery(BaseModel):
+    ids:list[str]
+    max_results:int=250
+
+@app.post('/api/captures/candidates')
+def candidates(q:CandidateQuery):
+    if not session.project_id:raise HTTPException(400,'Abra um projeto')
+    if not 2<=len(q.ids)<=40:raise HTTPException(422,'Selecione 2 a 40 capturas')
+    if len(set(q.ids))!=len(q.ids):raise HTTPException(422,'Capturas duplicadas')
+    shots=[]
+    for cap in q.ids:
+        item=store.capture(session.project_id,cap)
+        if not item:raise HTTPException(404,'Captura não encontrada')
+        shots.append(item|{'data':require_capture(cap)})
+    try:return candidate_report(shots,min(max(1,q.max_results),1000))
+    except ValueError as exc:raise HTTPException(422,str(exc))
+
+@app.get('/api/captures/breakpoints')
+def breakpoints(addresses:str='36D0,52C8'):
+    try:
+        parts=[x.strip().replace('$','').replace('7E:','').replace('7F:','') for x in addresses.upper().split(',') if x.strip()]
+        if not 1<=len(parts)<=30:raise ValueError('Informe até 30 endereços')
+        vals=[]
+        for original,part in zip([x.strip().upper() for x in addresses.split(',') if x.strip()],parts):
+            value=int(part,16)
+            if original.startswith(('7F:','$7F:')):value+=0x10000
+            vals.append(value)
+        return {'breakpoints':breakpoint_plan(vals)}
+    except ValueError as exc:raise HTTPException(422,str(exc))

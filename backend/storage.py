@@ -29,6 +29,11 @@ class Store:
                     char_id INTEGER NOT NULL, name TEXT NOT NULL, address INTEGER NOT NULL, value INTEGER NOT NULL,
                     source TEXT NOT NULL, evidence TEXT NOT NULL DEFAULT 'dump', confidence TEXT NOT NULL DEFAULT 'observed',
                     UNIQUE(project_id,char_id,address,source));
+                CREATE TABLE IF NOT EXISTS captures(id TEXT PRIMARY KEY, project_id TEXT NOT NULL,
+                    character TEXT NOT NULL, expected_id INTEGER, filename TEXT NOT NULL, sha TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE);
+                CREATE INDEX IF NOT EXISTS idx_captures_project ON captures(project_id);
                 CREATE INDEX IF NOT EXISTS idx_symbols_project ON symbols(project_id);
                 CREATE INDEX IF NOT EXISTS idx_obs_project ON observations(project_id);
             ''')
@@ -80,3 +85,27 @@ class Store:
     def observe(self,pid,char_id,name,address,value,source,evidence='dump',confidence='observed'):
         with _LOCK,self.connection() as c:
             c.execute('INSERT OR REPLACE INTO observations(project_id,char_id,name,address,value,source,evidence,confidence) VALUES(?,?,?,?,?,?,?,?)',(pid,char_id,name,address,value,source,evidence,confidence))
+
+    def add_capture(self,pid,raw,filename,character,expected_id=None):
+        if not self.get(pid):raise KeyError(pid)
+        sha=hashlib.sha256(raw).hexdigest()
+        target=self.artifacts/sha
+        if not target.exists():
+            tmp=self.artifacts/(sha+'.tmp'+uuid.uuid4().hex)
+            tmp.write_bytes(raw);tmp.replace(target)
+        cap=uuid.uuid4().hex[:12]
+        with _LOCK,self.connection() as c:
+            c.execute('INSERT OR IGNORE INTO artifacts(sha,size,filename) VALUES(?,?,?)',(sha,len(raw),safe_name(filename)))
+            c.execute('INSERT INTO captures(id,project_id,character,expected_id,filename,sha) VALUES(?,?,?,?,?,?)',
+                      (cap,pid,character,expected_id,safe_name(filename),sha))
+        return self.capture(pid,cap)
+    def capture(self,pid,cap):
+        with self.connection() as c:
+            row=c.execute('SELECT * FROM captures WHERE project_id=? AND id=?',(pid,cap)).fetchone()
+            return dict(row) if row else None
+    def captures(self,pid):
+        with self.connection() as c:
+            return [dict(x) for x in c.execute('SELECT * FROM captures WHERE project_id=? ORDER BY created_at,id',(pid,))]
+    def remove_capture(self,pid,cap):
+        with _LOCK,self.connection() as c:
+            return c.execute('DELETE FROM captures WHERE project_id=? AND id=?',(pid,cap)).rowcount>0

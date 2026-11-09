@@ -65,3 +65,25 @@ py -3 -m venv .venv
 ```
 
 Arquitetura: `backend/core.py` (ROM/65C816/CFG), `backend/analysis.py` (xrefs), `backend/storage.py` (SQLite), `backend/server.py` (API), `backend/reference/characters.csv` (observações), `backend/static/index.html` (interface) e `tests` (suíte).
+
+## v0.3 — Memory Analyzer e Character Mapper
+
+Nova aba **Memory Analyzer**. Crie ou abra um projeto SQLite e importe capturas de 128 KiB `SnesWorkRam.dmp` ou de 16 MiB `SnesMemory.dmp`. O sistema extrai os bancos físicos `$7E/$7F` e persiste os dumps em armazenamento por SHA-256; capturas de projetos diferentes ficam separadas.
+
+Recursos entregues:
+- Importação com nome do personagem e ID hexadecimal **opcional** (anotação, não conclusão).
+- Comparação de duas capturas com filtros de offset e extensão, diferenças por byte e páginas.
+- Busca por campos discriminantes entre várias capturas; capturas repetidas do mesmo lutador descartam endereços instáveis.
+- Classificação pelo número de coincidências com IDs informados, com prioridade para `$7E:36D0`, `$7E:52C8`, `$7E:1C59`.
+- Recomendações de breakpoints de escrita para Mesen 2; nenhum controle remoto do emulador é realizado.
+- Lista de capturas persistente com exclusão individual. Nenhuma ROM é alterada.
+
+**Limitação importante:** um campo que contém IDs esperados em snapshots pode ser somente uma cópia transitória; sua função precisa de prova por trace, comparação durante a transição e breakpoint de escrita. Não interpretar a lista automática como tabela de IDs confirmados.
+
+### Testes
+
+`python -m pytest -q` — 18 testes, incluindo integração da API e persistência SQLite. Sintaxe do JavaScript validada com `node --check`.
+
+### Instalação
+
+A aplicação ainda usa FastAPI com frontend HTML/JS local, conforme as versões anteriores. Execute `iniciar-windows.cmd` com Python 3.12+ ou `iniciar-linux.sh`. Acesse http://127.0.0.1:8000, abra projeto, importe ROM quando desejar e use a aba **Memory Analyzer**. A análise de WRAM não exige ter ROM aberta.
