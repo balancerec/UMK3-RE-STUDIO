@@ -1,0 +1,27 @@
+rom_offset,cpu,register,name,instruction,bytes,cdl_code_bit,addressing,confidence
+34676,12617588,$420C,HDMAEN,STZ abs,9C 0C 42,True,absolute (DBR não conhecido),candidato com CDL
+34900,12617812,$420C,HDMAEN,STX abs,8E 0C 42,True,absolute (DBR não conhecido),candidato com CDL
+302471,12885383,$2115,VMAIN,STY abs,8C 15 21,True,absolute (DBR não conhecido),candidato com CDL
+302510,12885422,$2116,VMADDL,STA abs,8D 16 21,True,absolute (DBR não conhecido),candidato com CDL
+302515,12885427,$420B,MDMAEN,STY abs,8C 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+302519,12885431,$2116,VMADDL,STA abs,8D 16 21,True,absolute (DBR não conhecido),candidato com CDL
+302539,12885451,$420B,MDMAEN,STY abs,8C 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+523897,13106809,$2121,CGADD,STA abs,8D 21 21,True,absolute (DBR não conhecido),candidato com CDL
+523910,13106822,$420B,MDMAEN,STA abs,8D 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+524004,13106916,$2121,CGADD,STA abs,8D 21 21,True,absolute (DBR não conhecido),candidato com CDL
+524017,13106929,$420B,MDMAEN,STA abs,8D 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+571689,13154601,$2115,VMAIN,STA abs,8D 15 21,True,absolute (DBR não conhecido),candidato com CDL
+571730,13154642,$2116,VMADDL,STA abs,8D 16 21,True,absolute (DBR não conhecido),candidato com CDL
+571737,13154649,$420B,MDMAEN,STA abs,8D 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+571772,13154684,$2116,VMADDL,STA abs,8D 16 21,True,absolute (DBR não conhecido),candidato com CDL
+571779,13154691,$420B,MDMAEN,STA abs,8D 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+571933,13154845,$420B,MDMAEN,STA abs,8D 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+572034,13154946,$2115,VMAIN,STX abs,8E 15 21,True,absolute (DBR não conhecido),candidato com CDL
+572080,13154992,$2116,VMADDL,STA abs,8D 16 21,True,absolute (DBR não conhecido),candidato com CDL
+572091,13155003,$420B,MDMAEN,STX abs,8E 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+572112,13155024,$2116,VMADDL,STX abs,8E 16 21,True,absolute (DBR não conhecido),candidato com CDL
+572137,13155049,$2115,VMAIN,STA abs,8D 15 21,True,absolute (DBR não conhecido),candidato com CDL
+572142,13155054,$420B,MDMAEN,STA abs,8D 0B 42,True,absolute (DBR não conhecido),candidato com CDL
+572201,13155113,$2115,VMAIN,STA abs,8D 15 21,True,absolute (DBR não conhecido),candidato com CDL
+572207,13155119,$2116,VMADDL,STX abs,8E 16 21,True,absolute (DBR não conhecido),candidato com CDL
+572210,13155122,$2118,VMDATAL,STA abs,8D 18 21,True,absolute (DBR não conhecido),candidato com CDL

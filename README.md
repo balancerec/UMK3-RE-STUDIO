@@ -146,7 +146,7 @@ python -m uvicorn backend.server:app --host 127.0.0.1 --port 8000
 
 **Limites de segurança:** esta aplicação não altera ROMs ou dumps originais, não reconstrói automaticamente imagens de personagens inteiros e não descomprime recursos gráficos de formatos próprios ainda desconhecidos. Nenhuma ROM comercial ou dump pessoal está incluído no ZIP.
 
-## v0.5 — Sprite Extraction Engine: investigação gráfica na ROM
+## v0.6 — Sprite Extraction Engine: investigação gráfica na ROM
 
 A nova aba **Sprite Extraction Engine** foi adicionada sem remover os módulos anteriores. **Esta fase é investigativa; não há ainda um decodificador comprovado da compressão gráfica usada pelos lutadores de UMK3.** Nenhum recurso é modificado ou escrito na ROM.
 
@@ -160,7 +160,7 @@ A nova aba **Sprite Extraction Engine** foi adicionada sem remover os módulos a
 
 ### Procedimento recomendado
 
-1. Na v0.5, crie/abra o projeto e importe `SnesPrgRom.dmp` (8 MiB).
+1. Na v0.6, crie/abra o projeto e importe `SnesPrgRom.dmp` (8 MiB).
 2. No Graphics Explorer, importe `SnesVideoRam.dmp` (64 KiB) e `SnesCgRam.dmp` (512 bytes, opcional para prévia).
 3. Abra **Sprite Extraction Engine** e selecione um banco, por exemplo offset `400000`.
 4. Altere `bpp`, número de linhas e colunas; observe a prévia e exporte um PNG quando útil.
@@ -185,3 +185,10 @@ A nova aba **Sprite Extraction Engine** foi adicionada sem remover os módulos a
 5. Montar animações completas por personagem e viabilizar reinserção segura.
 
 O projeto distribui somente a aplicação e os testes. **As ROMs comerciais e os dumps do usuário não são incluídos no pacote.**
+
+
+## v0.6 — DMA / Graphics Compression Analyzer
+
+Nova aba DMA / Compression Analyzer, com busca de instruções **candidatas** de escrita em registradores de controle DMA/PPU; filtros do CDL, links para desassembler, comparação exata entre WRAM importada e VRAM e roteiro de captura no Mesen 2.
+
+**Limitações:** as buscas por assinaturas de opcode não fazem reconstrução de fluxo nem conhecem DBR; podem identificar bytes de dados. O registro CDL com bit CODE indica execução da região durante captura, não a validação do alinhamento da instrução. Os arquivos de VRAM e WRAM podem ser de momentos distintos. Não há ainda codec comprovado para sprites do UMK3. Não é implementada alteração da ROM.

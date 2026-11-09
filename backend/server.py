@@ -11,8 +11,9 @@ from .memory import extract_wram, pair_compare, candidate_report, breakpoint_pla
 from fastapi import Form
 from .graphics import validate_dump, decode_cgram, decode_oam, tile_sheet, render_oam, png_bytes
 from .extraction import bank_inventory, match_vram_windows, run_candidates, preview_raw
+from .dma import scan_register_writes, match_staging, dma_observation_plan
 
-app=FastAPI(title='UMK3 RE Studio',version='0.5.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.6.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
@@ -354,3 +355,27 @@ def extract_preview(offset:int=0,bpp:int=4,columns:int=16,rows:int=8,
     except ValueError as e:raise HTTPException(422,str(e))
     headers={'Content-Disposition':'attachment; filename="rom_raw_tiles.png"'} if download else {}
     return Response(png_bytes(img),media_type='image/png',headers=headers)
+
+
+# v0.6 — Graphics Compression / DMA Research
+@app.get('/api/dma/registers')
+def dma_registers(start:int=0,length:int|None=None,code_only:bool=False,limit:int=250):
+    if not session.rom:raise HTTPException(400,'Importe uma ROM primeiro')
+    try:return scan_register_writes(session.rom.data,session.cdl,start=start,length=length,
+                                     code_only=code_only,limit=limit)
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.get('/api/dma/staging')
+def dma_staging(capture_id:str,chunk_size:int=32,vram_offset:int=0,
+                vram_length:int=4096,minimum_unique:int=12,max_matches:int=100):
+    vram=session.graphics.get('vram')
+    if vram is None:raise HTTPException(400,'Importe uma VRAM no Graphics Explorer')
+    try:
+        wram=require_capture(capture_id)
+        return match_staging(wram,vram,chunk_size=chunk_size,vram_offset=vram_offset,
+                            vram_length=vram_length,minimum_unique=minimum_unique,
+                            max_matches=max_matches)
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.get('/api/dma/plan')
+def dma_plan():return dma_observation_plan()
