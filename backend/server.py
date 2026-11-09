@@ -13,8 +13,9 @@ from .graphics import validate_dump, decode_cgram, decode_oam, tile_sheet, rende
 from .extraction import bank_inventory, match_vram_windows, run_candidates, preview_raw
 from .dma import scan_register_writes, match_staging, dma_observation_plan
 from .dma_trace import analyze_trace
+from .capture import convert_capture, capture_audit, capture_plan
 
-app=FastAPI(title='UMK3 RE Studio',version='0.7.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.8.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
@@ -410,3 +411,36 @@ def dma_trace_analyze(capture_id:str|None=None,max_results:int=100):
         rom=session.rom.data if session.rom else None,wram=wram,
         vram=session.graphics.get('vram'),max_results=max_results)
     except ValueError as e:raise HTTPException(422,str(e))
+
+
+# v0.8 — Mesen Capture Assistant. Raw imports are never executed as scripts.
+@app.get('/api/capture/plan')
+def mesen_capture_plan():return capture_plan()
+
+@app.post('/api/capture/convert')
+async def mesen_capture_convert(file:UploadFile=File(...)):
+    raw=await content(file,16*1024*1024)
+    try:
+        converted=convert_capture(raw)
+        audit=capture_audit(converted)
+    except ValueError as e:raise HTTPException(422,str(e))
+    session.dma_trace=converted
+    if session.project_id:
+        store.save_graphics_asset(session.project_id,'dma_trace',converted,'mesen_dma_normalizado.csv')
+    return {'audit':audit,'saved':bool(session.project_id),'csv':converted.decode('utf-8')}
+
+@app.get('/api/capture/audit')
+def mesen_capture_audit():
+    if session.dma_trace is None:raise HTTPException(400,'Importe um trace antes')
+    try:return capture_audit(session.dma_trace)
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.get('/api/capture/script.lua')
+def mesen_capture_script():
+    return FileResponse(Path(__file__).resolve().parent.parent/'examples'/'mesen_dma_capture.lua',
+                        media_type='text/plain',filename='mesen_dma_capture.lua')
+
+@app.get('/api/capture/template.csv')
+def mesen_capture_template():
+    return FileResponse(Path(__file__).resolve().parent.parent/'examples'/'dma_trace_manual.csv',
+                        media_type='text/csv',filename='dma_trace_manual.csv')

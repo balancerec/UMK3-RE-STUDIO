@@ -229,3 +229,20 @@ O arquivo é persistido por projeto em armazenamento local por hash. Seu conteú
 ### Validar
 
 `python -m pytest -q` — **43 testes aprovados**, incluindo 8 testes novos do DMA Trace e todos os testes herdados. JavaScript validado com `node --check`.
+
+
+## v0.8 — Mesen Capture Assistant
+
+O módulo v0.8 adiciona a aba **Mesen Capture v0.8** e permite converter um log de escritas de registradores do Mesen 2 para o formato do DMA Trace v0.7.
+
+1. Em **Mesen Capture**, baixe `mesen_dma_capture.lua`.
+2. No Mesen 2, abra **Debug → Script Window** e execute o script (experimental; teste em sua versão).
+3. Volte ao jogo e provoque uma transição de gráficos, pause e salve/copie o log em UTF-8.
+4. Importe o log na aba v0.8. O Studio gera `mesen_dma_normalizado.csv`, audita as lacunas e guarda no projeto SQLite quando houver projeto ativo.
+5. Analise as transferências candidatas na aba **DMA Trace v0.7**.
+
+O script observa por callbacks as escritas `$00:4300–$00:437F`, `$00:420B` e `$00:2115–$00:2117`. A API Lua foi consultada na documentação oficial Mesen 2: https://github.com/SourMesen/Mesen2/blob/master/UI/Debugger/Documentation/LuaDocumentation.json. **Não foi testado no próprio emulador neste ambiente.** Se o script registrar linhas com endereço inadequado para seu Mesen, utilize o modelo manual e os breakpoints do depurador.
+
+A análise v0.8 **não identifica o codec**, não valida uma transferência DMA por execução real no emulador e não modifica ROMs.
+
+Endpoints: `GET /api/capture/plan`, `GET /api/capture/script.lua`, `GET /api/capture/template.csv`, `POST /api/capture/convert`, `GET /api/capture/audit`.
