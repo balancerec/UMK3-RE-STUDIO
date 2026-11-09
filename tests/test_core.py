@@ -9,10 +9,17 @@ def test_all_opcodes():
     assert OPCODES[0x22]==('JSL','long')
 
 def test_mapping_exhirom():
-    tests={0x000000:0xc00000,0x008000:0xc08000,0x3fffff:0xffffff,0x400000:0x008000,0x5fffff:0x3fffff,0x600000:0x808000,0x7fffff:0xbfffff}
-    for f,c in tests.items():
-        assert file_to_cpu(f,'exhirom')==c,(hex(f),hex(c))
-        assert cpu_to_file(c,'exhirom')==f,(hex(c),hex(f))
+    # Ancoras VERIFICADAS na ROM Deluxe 2.2 (SHA-256 f512ef86...): bytes conferem com o disassembly observado no Mesen.
+    verified={0x86A1F6:0x06A1F6,0xC6A1F6:0x06A1F6,0x8083F2:0x0083F2,0x88980F:0x08980F,0xC4A362:0x04A362}
+    for c,f in verified.items():assert cpu_to_file(c,'exhirom')==f,(hex(c),hex(f))
+    # 4 MiB baixos: canonico $C0-$FF
+    for f,c in {0x000000:0xc00000,0x008000:0xc08000,0x3fffff:0xffffff}.items():
+        assert file_to_cpu(f,'exhirom')==c;assert cpu_to_file(c,'exhirom')==f
+    # 4 MiB altos conforme especificacao ExHiROM (nao verificado por execucao nesta ROM)
+    for f,c in {0x400000:0x400000,0x7dffff:0x7dffff,0x7e8000:0x3e8000,0x7fffff:0x3fffff}.items():
+        assert file_to_cpu(f,'exhirom')==c,(hex(f),hex(c));assert cpu_to_file(c,'exhirom')==f,(hex(c),hex(f))
+    assert cpu_to_file(0x008000,'exhirom')==0x408000==cpu_to_file(0x408000,'exhirom')
+    assert file_to_cpu(0x7e0000,'exhirom') is None
     for c in (0x7e0000,0x7f1234,0x002100,0x804200):assert cpu_to_file(c,'exhirom') is None
 
 def test_rom_title():

@@ -18,12 +18,17 @@ def cpu_to_file(address:int, mapping='exhirom', header=0):
     if mapping=='hirom':
         return (((b&0x3f)<<16)|a)+header
     if mapping=='exhirom':
-        # ExHiROM: 40-7D => low 4MB; C0-FF => low 4MB mirror
-        # 00-3F upper halves and 80-BF upper halves => upper 4MB.
-        if 0x40<=b<=0x7d or 0xc0<=b<=0xff:
+        # ExHiROM (verificado contra 11 assinaturas da ROM Deluxe 2.2):
+        #   C0-FF:0000-FFFF e 80-BF:8000-FFFF => 4 MiB baixos (espelhos HiROM)
+        #   40-7D:0000-FFFF e 00-3F:8000-FFFF => 4 MiB altos (offset 0x400000+)
+        if 0xc0<=b<=0xff:
             return (((b&0x3f)<<16)|a)+header
-        if a>=0x8000 and (0x00<=b<=0x3f or 0x80<=b<=0xbf):
-            return (0x400000 + (0x200000 if b>=0x80 else 0) + ((b&0x3f)<<15) + (a&0x7fff))+header
+        if 0x80<=b<=0xbf:
+            return (((b&0x3f)<<16)|a)+header   # a>=0x8000 garantido acima
+        if 0x40<=b<=0x7d:
+            return (0x400000+((b-0x40)<<16)+a)+header
+        if 0x00<=b<=0x3f:
+            return (0x400000+(b<<16)+a)+header
     return None
 
 def file_to_cpu(offset:int, mapping='exhirom',header=0):
@@ -38,7 +43,10 @@ def file_to_cpu(offset:int, mapping='exhirom',header=0):
     if mapping=='exhirom':
         if offset>=0x800000:return None
         if offset<0x400000:return (0xc0|(offset>>16))<<16|(offset&0xffff)
-        return (((0x80 if offset>=0x600000 else 0x00)|(((offset-0x400000)%0x200000)>>15))<<16)|0x8000|(offset&0x7fff)
+        up=offset-0x400000
+        if up<0x3e0000:return ((0x40|(up>>16))<<16)|(up&0xffff)
+        # 0x7E0000-0x7FFFFF: so alcancavel via $3E/$3F:8000-FFFF (40-7D termina em 7D)
+        return (((up>>16)&0x3f)<<16|(up&0xffff)) if (up&0xffff)>=0x8000 else None
     return None
 
 def checksum_snes(data):
