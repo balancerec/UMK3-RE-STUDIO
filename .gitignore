@@ -1,0 +1,14 @@
+# ROMs e dumps comerciais — nunca versionar
+*.sfc
+*.smc
+*.rom
+*.dmp
+*.cdl
+*.zip
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# Dados locais do app
+.umk3-re-studio/
