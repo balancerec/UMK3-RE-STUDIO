@@ -1,14 +1,17 @@
-# ROMs e dumps comerciais — nunca versionar
+# Dados locais e ambiente
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.sqlite3
+*.db
+*.log
+.env
+# Não redistribuir material de jogo e estados privados
 *.sfc
 *.smc
-*.rom
 *.dmp
-*.cdl
-*.zip
-# Python
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-# Dados locais do app
-.umk3-re-studio/
+*.sav
+*.srm
+*.spc
+*.bundle
