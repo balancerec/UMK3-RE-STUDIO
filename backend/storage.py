@@ -1,5 +1,6 @@
 """Per-project SQLite persistence and content-addressed local ROM artifacts."""
 from __future__ import annotations
+from contextlib import contextmanager
 import hashlib, json, os, re, sqlite3, threading, uuid
 from pathlib import Path
 
@@ -39,11 +40,21 @@ class Store:
                 CREATE INDEX IF NOT EXISTS idx_symbols_project ON symbols(project_id);
                 CREATE INDEX IF NOT EXISTS idx_obs_project ON observations(project_id);
             ''')
+    @contextmanager
     def connection(self):
-        conn=sqlite3.connect(self.db,timeout=15)
-        conn.row_factory=sqlite3.Row
-        conn.execute('PRAGMA foreign_keys=ON')
-        return conn
+        """Commit/rollback on exit and always release the SQLite file handle.
+
+        sqlite3.Connection's native context manager manages transactions,
+        but does not close the connection (important on Windows).
+        """
+        conn = sqlite3.connect(self.db, timeout=15)
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA foreign_keys=ON')
+            with conn:
+                yield conn
+        finally:
+            conn.close()
     def projects(self):
         with _LOCK,self.connection() as c:return [dict(x) for x in c.execute('SELECT * FROM projects ORDER BY created_at DESC,id')]
     def create(self,name):
