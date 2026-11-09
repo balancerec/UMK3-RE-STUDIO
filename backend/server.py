@@ -10,8 +10,9 @@ from .analysis import build_xrefs, query_xrefs, seed_roots
 from .memory import extract_wram, pair_compare, candidate_report, breakpoint_plan, WRAM_SIZE, MAPPED_SIZE, CANDIDATES
 from fastapi import Form
 from .graphics import validate_dump, decode_cgram, decode_oam, tile_sheet, render_oam, png_bytes
+from .extraction import bank_inventory, match_vram_windows, run_candidates, preview_raw
 
-app=FastAPI(title='UMK3 RE Studio',version='0.4.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.5.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
@@ -318,4 +319,38 @@ def graphics_sprites(size_mode:int=0,base:int=0,name_select:int=0,scale:int=2,do
     try:img=render_oam(session.graphics['vram'],session.graphics['cgram'],session.graphics['oam'],size_mode=size_mode,base=base,name_select=name_select,scale=scale)
     except ValueError as e:raise HTTPException(422,str(e))
     headers={'Content-Disposition':'attachment; filename="umk3_oam_sprites.png"'} if download else {}
+    return Response(png_bytes(img),media_type='image/png',headers=headers)
+
+
+# v0.5 — Sprite Extraction research tools (read-only, no compression claims)
+@app.get('/api/extract/banks')
+def extract_banks():
+    if not session.rom:raise HTTPException(400,'Importe uma ROM primeiro')
+    return {'banks':bank_inventory(session.rom.data),'note':'Entropia e repetição não comprovam compressão nem espaço livre.'}
+
+@app.get('/api/extract/match')
+def extract_match(chunk_size:int=64,vram_offset:int=0,vram_length:int=4096,
+                  step:int=64,minimum_unique:int=12,max_matches:int=150):
+    if not session.rom:raise HTTPException(400,'Importe uma ROM primeiro')
+    if 'vram' not in session.graphics:raise HTTPException(400,'Importe SnesVideoRam.dmp no Graphics Explorer')
+    try:return match_vram_windows(session.rom.data,session.graphics['vram'],
+                   chunk_size=chunk_size,vram_offset=vram_offset,vram_length=vram_length,
+                   step=step,minimum_unique=minimum_unique,max_matches=max_matches)
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.get('/api/extract/runs')
+def extract_runs(start:int=0,length:int=65536,min_run:int=64,limit:int=100):
+    if not session.rom:raise HTTPException(400,'Importe uma ROM primeiro')
+    try:return {'runs':run_candidates(session.rom.data,start=start,length=length,min_run=min_run,limit=limit),
+                'note':'Repetições de bytes; não são automaticamente regiões livres.'}
+    except ValueError as e:raise HTTPException(422,str(e))
+
+@app.get('/api/extract/preview.png')
+def extract_preview(offset:int=0,bpp:int=4,columns:int=16,rows:int=8,
+                    palette:int=0,scale:int=2,download:bool=False):
+    if not session.rom:raise HTTPException(400,'Importe uma ROM primeiro')
+    try:img=preview_raw(session.rom.data,offset=offset,bpp=bpp,columns=columns,rows=rows,
+                       palette=palette,scale=scale,cgram=session.graphics.get('cgram'))
+    except ValueError as e:raise HTTPException(422,str(e))
+    headers={'Content-Disposition':'attachment; filename="rom_raw_tiles.png"'} if download else {}
     return Response(png_bytes(img),media_type='image/png',headers=headers)

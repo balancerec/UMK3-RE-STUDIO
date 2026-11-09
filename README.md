@@ -145,3 +145,43 @@ python -m uvicorn backend.server:app --host 127.0.0.1 --port 8000
 **Testes nesta versão:** 24 aprovados (inclui testes de API e decodificação gráfica; validação opcional com dumps enviados). JavaScript validado com `node --check`.
 
 **Limites de segurança:** esta aplicação não altera ROMs ou dumps originais, não reconstrói automaticamente imagens de personagens inteiros e não descomprime recursos gráficos de formatos próprios ainda desconhecidos. Nenhuma ROM comercial ou dump pessoal está incluído no ZIP.
+
+## v0.5 — Sprite Extraction Engine: investigação gráfica na ROM
+
+A nova aba **Sprite Extraction Engine** foi adicionada sem remover os módulos anteriores. **Esta fase é investigativa; não há ainda um decodificador comprovado da compressão gráfica usada pelos lutadores de UMK3.** Nenhum recurso é modificado ou escrito na ROM.
+
+### Recursos novos
+
+- **Visualização planar da ROM**: interpretação *bruta* de offsets como tiles 2bpp, 4bpp ou 8bpp, com paleta CGRAM opcional. O PNG é gerado no servidor e pode ser salvo, mas não significa que aquele intervalo seja gráfico real.
+- **Busca exata ROM ↔ VRAM**: procura janelas de 16, 32, 64, 128, 256 ou 512 bytes da VRAM diretamente nos bytes da ROM. Descarta janelas muito uniformes e limita resultados para evitar falsos positivos. Permite exportar resultados CSV.
+- **Inventário dos bancos**: entropia Shannon, fração de bytes 00/FF, número de bytes distintos e maior repetição consecutiva. Esses indicadores **não** provam que os bancos estejam comprimidos ou livres.
+- **Sequências repetidas**: lista trechos de bytes iguais com extensão configurável, apenas para investigação.
+- **Navegação integrada**: resultados encontrados na pesquisa podem ser abertos diretamente na prévia de tiles da ROM.
+
+### Procedimento recomendado
+
+1. Na v0.5, crie/abra o projeto e importe `SnesPrgRom.dmp` (8 MiB).
+2. No Graphics Explorer, importe `SnesVideoRam.dmp` (64 KiB) e `SnesCgRam.dmp` (512 bytes, opcional para prévia).
+3. Abra **Sprite Extraction Engine** e selecione um banco, por exemplo offset `400000`.
+4. Altere `bpp`, número de linhas e colunas; observe a prévia e exporte um PNG quando útil.
+5. Execute a pesquisa ROM ↔ VRAM. O painel mostra quantas janelas foram consideradas, quantas foram descartadas por baixa diversidade e quais resultaram em correspondências exatas.
+6. Registre os offsets candidatos e confirme com rastreamentos DMA e do carregador gráfico no Mesen 2. A ausência de correspondência é inconclusiva.
+
+### API e testes
+
+- `GET /api/extract/banks`
+- `GET /api/extract/match?chunk_size=64&vram_offset=0&vram_length=4096&step=64&minimum_unique=12`
+- `GET /api/extract/runs?start=4194304&length=65536&min_run=64`
+- `GET /api/extract/preview.png?offset=4194304&bpp=4&columns=16&rows=8&palette=0`
+
+`python -m pytest -q`: 29 testes (24 herdados e 5 novos). A sintaxe do JavaScript passa no `node --check`. Em uma busca exploratória com dados reais, nos primeiros 8 KiB da VRAM e diversidade mínima 12, **não surgiram correspondências exatas** em janelas de 32 ou 64 bytes da ROM. O resultado não confirma algoritmo de compressão.
+
+### O que ainda falta
+
+1. Capturar registradores PPU/OBSEL e rastreamentos DMA sincronizados com VRAM/CGRAM/OAM.
+2. Identificar o carregador de gráficos e seus buffers via disassembler e breakpoints.
+3. Descobrir e validar algoritmos de descompressão com pares de dados entrada/saída.
+4. Localizar as tabelas de ponteiros e os metadados dos frames dos lutadores.
+5. Montar animações completas por personagem e viabilizar reinserção segura.
+
+O projeto distribui somente a aplicação e os testes. **As ROMs comerciais e os dumps do usuário não são incluídos no pacote.**
