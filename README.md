@@ -1,4 +1,4 @@
-# UMK3 Reverse Engineering Studio — v0.7
+# UMK3 Reverse Engineering Studio — v0.9
 
 Aplicativo **local** para investigação de ROMs SNES e **Ultimate Mortal Kombat 3 Deluxe 2.2**. Evolução compatível com as versões v0.1–v0.3; não inclui ROMs comerciais. Interface HTML/CSS/JS local e API FastAPI/Python. A conexão com a internet só é necessária na primeira instalação de dependências Python.
 
@@ -246,3 +246,20 @@ O script observa por callbacks as escritas `$00:4300–$00:437F`, `$00:420B` e `
 A análise v0.8 **não identifica o codec**, não valida uma transferência DMA por execução real no emulador e não modifica ROMs.
 
 Endpoints: `GET /api/capture/plan`, `GET /api/capture/script.lua`, `GET /api/capture/template.csv`, `POST /api/capture/convert`, `GET /api/capture/audit`.
+
+
+## v0.9 — DMA Correlation Analyzer
+
+- Nova aba **DMA Correlation** liga cada ativação explícita de `$420B` do trace ao PC capturado, ao offset físico da ROM e à marcação correspondente no CDL.
+- Identifica origem candidata em ROM ou WRAM e registra a configuração inferida dos canais DMA (da v0.7).
+- Indica quando a instrução exibida depende do estado M/X assumido. **A decodificação estática não prova que a instrução mostrada realizou a escrita**, especialmente se o PC exportado for impreciso.
+- Procura escritas explícitas ao buffer de origem WRAM somente se estas estiverem presentes no log (o script Lua v0.8 captura principalmente registradores DMA/PPU; normalmente não haverá produtores registrados).
+- **Nenhum codec de UMK3 foi identificado ou implementado**. Resultados sem logs reais continuam como exemplo sintético.
+- API `GET /api/correlation/analyze?max_results=100` (opcional `capture_id`). É necessário importar ROM para associar endereços físicos e trace para observar escritas.
+- Documentar os dados de origem, buffer de saída e snapshots sincronizados antes de qualquer tentativa de descompressão.
+
+### Primeiro teste real
+
+No Mesen 2, importe o script `examples/mesen_dma_capture.lua` (experimental). Capture uma transição de seleção para luta, depois importe o log pela aba Mesen Capture. Abra a nova aba DMA Correlation e clique em **Correlacionar**. Se o log não registrar PC ou eventos de `$420B`, o aplicativo declara a ausência em vez de inventar endereços.
+
+Comandos de teste: `python -m pytest -q`. O ZIP não contém ROM ou dumps de jogo.

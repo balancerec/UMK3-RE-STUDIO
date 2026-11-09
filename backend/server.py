@@ -14,8 +14,9 @@ from .extraction import bank_inventory, match_vram_windows, run_candidates, prev
 from .dma import scan_register_writes, match_staging, dma_observation_plan
 from .dma_trace import analyze_trace
 from .capture import convert_capture, capture_audit, capture_plan
+from .correlation import correlate_trace
 
-app=FastAPI(title='UMK3 RE Studio',version='0.8.0')
+app=FastAPI(title='UMK3 RE Studio',version='0.9.0')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
 class Session:
     def __init__(self):
@@ -444,3 +445,13 @@ def mesen_capture_script():
 def mesen_capture_template():
     return FileResponse(Path(__file__).resolve().parent.parent/'examples'/'dma_trace_manual.csv',
                         media_type='text/csv',filename='dma_trace_manual.csv')
+
+
+# v0.9 — Code/trace correlation; only explicitly logged writes are observed.
+@app.get('/api/correlation/analyze')
+def correlation_analyze(capture_id:str|None=None,max_results:int=100):
+    if session.dma_trace is None:raise HTTPException(400,'Importe um trace DMA antes')
+    wram=require_capture(capture_id) if capture_id else None
+    try:return correlate_trace(session.dma_trace,rom=session.rom,cdl=session.cdl,
+                              wram=wram,vram=session.graphics.get('vram'),max_results=max_results)
+    except ValueError as e:raise HTTPException(422,str(e))
