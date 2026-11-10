@@ -74,16 +74,22 @@ $('#ddrun').onclick=async()=>{
   const path='hidden-roster/decision-diff?ordinal_a='+Number($('#ddorda').value)+'&ordinal_b='+Number($('#ddordb').value)+'&lookback='+Number($('#ddlook').value);
   const out=await req(path,{method:'POST',body:fd});diffResult=out;
   const summary=out.summary||{};
+  const counts=out.difference_counts||{};
   const lines=[
    'A: '+(out.a.found?out.a.cursor+' / '+out.a.anchor.pc+' / linha '+out.a.anchor.line:'nenhum STA encontrado'),
    'B: '+(out.b.found?out.b.cursor+' / '+out.b.anchor.pc+' / linha '+out.b.anchor.line:'nenhum STA encontrado'),
-   'Diferenças de desvio: '+(out.branch_differences||[]).length,
-   'Diferenças totais: '+(out.differences||[]).length,
+   'Desvios condicionais diferentes: '+(counts.branch_outcomes||0),
+   'Caminhos diferentes: '+(counts.control_flow||0),
+   'Valores de memória diferentes: '+(counts.memory_value||0),
+   'Alterações de registradores: '+(counts.register_occurrences||0)+' ocorrências em '+(counts.register_groups||0)+' grupos',
    'Não há comprovação automática da causa de bloqueio.'
   ];
   const div=$('#ddout');div.replaceChildren();
-  const p=document.createElement('pre');p.style.whiteSpace='pre-wrap';p.textContent=lines.join('\\n');div.appendChild(p);
-  const detail=document.createElement('details');const title=document.createElement('summary');title.textContent='Ver diferenças de execução e registradores';detail.appendChild(title);
+  const p=document.createElement('pre');p.style.whiteSpace='pre-wrap';p.textContent=lines.join('\n');div.appendChild(p);
+  if(out.diagnostics&&out.diagnostics.length){
+   const note=document.createElement('p');note.className='foot';note.textContent=out.diagnostics.join(' | ');div.appendChild(note);
+  }
+  const detail=document.createElement('details');const title=document.createElement('summary');title.textContent='Ver diferenças agrupadas e evidências';detail.appendChild(title);
   const pre=document.createElement('pre');pre.style.whiteSpace='pre-wrap';pre.style.maxHeight='390px';pre.style.overflow='auto';pre.textContent=JSON.stringify({branch_differences:out.branch_differences,differences:out.differences},null,2);detail.appendChild(pre);div.appendChild(detail);
   $('#ddstatus').textContent='Comparação concluída: '+a.name+' × '+b.name;
  }catch(e){$('#ddstatus').textContent='ERRO: '+e.message;}
