@@ -16,6 +16,8 @@ from .dma_trace import analyze_trace
 from .capture import convert_capture, capture_audit, capture_plan
 from .correlation import correlate_trace
 from .decompression import compare_pair, scan_hypotheses, region_profile, FORMATS
+from .hidden_roster_analyzer import analyze_bytes, events_to_csv, filter_events, DEFAULT_WATCH
+import json as _json
 
 app=FastAPI(title='UMK3 RE Studio',version='1.0.1')
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['*'],allow_headers=['*'])
@@ -503,3 +505,38 @@ def research_profile(start:int=0,length:int=4096,window:int=256):
     if not session.rom:raise HTTPException(400,'Importe a ROM')
     try:return region_profile(session.rom.data,start,length,window)
     except ValueError as e:raise HTTPException(422,str(e))
+
+
+# v2.0 Hidden Roster Analyzer: traces do Mesen -> timeline, transições e grafo (somente leitura, em memória).
+_HR_LAST={'result':None,'filename':None}
+
+@app.post('/api/hidden-roster/analyze')
+async def hidden_roster_analyze(file:UploadFile=File(...),max_events:int=Query(20000,ge=1,le=200000)):
+    raw=await file.read()
+    try:result=analyze_bytes(raw,rom=session.rom,max_events=max_events)
+    except ValueError as e:raise HTTPException(422,str(e))
+    _HR_LAST['result']=result;_HR_LAST['filename']=file.filename
+    return result
+
+@app.get('/api/hidden-roster/status')
+def hidden_roster_status():
+    r=_HR_LAST['result']
+    return {'loaded':r is not None,'filename':_HR_LAST['filename'],'rom':session.rom is not None,
+            'watch':{k:f'$7E:{v:04X}' for k,v in DEFAULT_WATCH.items()},
+            'events':r['meta']['events_returned'] if r else 0}
+
+def _hr_filtered(var,character,access,min_confidence):
+    r=_HR_LAST['result']
+    if r is None:raise HTTPException(400,'Importe e analise um trace primeiro')
+    return r,filter_events(r['events'],var,character,access,min_confidence)
+
+@app.get('/api/hidden-roster/export.json')
+def hidden_roster_export_json(var:str|None=None,character:str|None=None,access:str|None=None,min_confidence:str|None=None):
+    r,ev=_hr_filtered(var,character,access,min_confidence)
+    body=_json.dumps({**{k:v for k,v in r.items() if k!='events'},'events':ev},ensure_ascii=False,indent=1)
+    return Response(body,media_type='application/json',headers={'Content-Disposition':'attachment; filename="hidden_roster_analysis.json"'})
+
+@app.get('/api/hidden-roster/export.csv')
+def hidden_roster_export_csv(var:str|None=None,character:str|None=None,access:str|None=None,min_confidence:str|None=None):
+    _,ev=_hr_filtered(var,character,access,min_confidence)
+    return PlainTextResponse(events_to_csv(ev),media_type='text/csv',headers={'Content-Disposition':'attachment; filename="hidden_roster_timeline.csv"'})
