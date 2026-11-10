@@ -12,5 +12,7 @@ Documentação OpenAPI gerada em tempo de execução: http://127.0.0.1:8000/docs
 - `POST /api/research/pair`: testar uma janela de dados por codec experimental.
 - `POST /api/research/scan`: varredura limitada por intervalo, codec e passo.
 - `GET /api/research/profile`: entropia e distribuição de bytes.
+- `POST /api/hidden-roster/analyze` (`file`, `max_events`): analisa um trace 65C816 do Mesen (timeline, transições de `$1C59`, grafo). Resultado guardado só em memória.
+- `GET /api/hidden-roster/status`, `/export.json`, `/export.csv` (filtros `var`, `character`, `access`, `min_confidence`). Ver `docs/HIDDEN_ROSTER_ANALYZER.md`.
 
 Todos os resultados de compressão são hipóteses, não resultados confirmados de decodificação proprietária. API local, sem autenticação; não exponha em rede.

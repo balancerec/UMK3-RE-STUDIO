@@ -62,6 +62,11 @@ Em `FF:FE3B`, `FE61` e `FE87` há `LDA $3BAE` seguido **diretamente** de `LDA #i
 - Outras escritas possíveis (`MVN` de `$80:83FF`, indexadas, indiretas, DMA): **NÃO EXCLUÍDAS**.
 - Por que o breakpoint Execute não disparou: **HIPÓTESES**, a testar em `docs/EXPERIMENTOS_3BAE_3BB0.md`.
 
+## E-009 — Hidden Roster Analyzer v2 (ferramenta; não é evidência de jogo)
+- O analisador reproduz, em trace **sintético**, os cinco escritores de `$1C59` de E-005 e a sequência `Idels → Shao Kahn → Motaro → Sheeva → Human Smoke → Idels`. Isso valida a **ferramenta**, não o comportamento do jogo.
+- Nenhum trace real foi fornecido nesta etapa: a origem de `$3BAE/$3BB0` (E-008) e o fluxo de `$FF:FE3B–FE8D` (E-007) **continuam NÃO VERIFICADOS**.
+- Experimento a executar: `docs/HIDDEN_ROSTER_ANALYZER.md`, seção "Próximo experimento".
+
 ## Defeitos conhecidos do Studio (não corrigidos)
 - `CpuState` perde o estado após `CLC; XCE` (Carry não rastreado): o reset `$00:83D7` (`CLC; XCE; REP #$30`) deixa `M/X` desconhecidos e o disassembly para em `LDA #imm`. Rastrear `C` imediatamente antes de `XCE` resolveria.
 - `examples/mesen_dma_capture.lua` lê `emu.getState().cpu.pc`; o formato das chaves de CPU no Mesen 2 **não foi verificado**. Se for plano (`"cpu.pc"`), a coluna PC continua vazia.
