@@ -5,7 +5,6 @@ causa de bloqueio. Somente CPU 65C816; SPC700 permanece contado à parte.
 """
 from __future__ import annotations
 
-from collections import deque
 from difflib import SequenceMatcher
 
 from .trace65816 import parse_line, wram_address, BRANCHES
@@ -158,14 +157,56 @@ def compare_traces(raw_a: bytes, raw_b: bytes, *, ordinal_a: int = 1,
                 if changed:
                     diffs.append({"type": "registers", "pc": ea["pc"], "line_a": ea["line"],
                                   "line_b": eb["line"], "changes": changed})
-    result["differences"] = diffs[:150]
+    # Prioriza evidência de fluxo e memória. Mudanças repetidas de registradores
+    # são agrupadas em intervalos, sem perder contagem ou linhas de origem.
+    priority = [d for d in diffs if d["type"] != "registers"]
+    registers = [d for d in diffs if d["type"] == "registers"]
+    register_groups = []
+    for d in registers:
+        signature = tuple(sorted((name, tuple(values))
+                                 for name, values in d["changes"].items()))
+        if register_groups and register_groups[-1]["signature"] == signature:
+            group = register_groups[-1]
+            group["count"] += 1
+            group["last_line_a"] = d["line_a"]
+            group["last_line_b"] = d["line_b"]
+            group["last_pc"] = d["pc"]
+        else:
+            register_groups.append({"signature": signature, "changes": d["changes"],
+                                    "count": 1, "first_pc": d["pc"], "last_pc": d["pc"],
+                                    "first_line_a": d["line_a"], "last_line_a": d["line_a"],
+                                    "first_line_b": d["line_b"], "last_line_b": d["line_b"]})
+    for group in register_groups:
+        del group["signature"]
+
+    # Quando as janelas seguem PCs iguais mas com A diferente, a decisão
+    # provavelmente ocorreu antes do recorte. Isso é alerta, não causalidade.
+    result["difference_counts"] = {
+        "control_flow": sum(d["type"] == "control_flow" for d in diffs),
+        "memory_value": sum(d["type"] == "memory_value" for d in diffs),
+        "register_occurrences": len(registers),
+        "register_groups": len(register_groups),
+        "branch_outcomes": len(branch_diffs),
+    }
+    result["differences"] = (priority + [{"type": "register_group", **group}
+                                       for group in register_groups])[:150]
     result["branch_differences"] = branch_diffs[:100]
+    result["diagnostics"] = []
+    if not branch_diffs and not any(d["type"] == "control_flow" for d in diffs):
+        result["diagnostics"].append(
+            "Sem desvio de fluxo diferente dentro destas janelas. "
+            "A origem da decisão pode estar antes da captura; capture mais "
+            "instruções antes do STA em $86:A7A8.")
+    if left["truncated_before"] or right["truncated_before"]:
+        result["diagnostics"].append(
+            "Uma janela chegou ao início do arquivo: ampliar lookback não "
+            "recupera instruções ausentes. Capture um trecho anterior no Mesen.")
     result["summary"] = {
         "a_destination": left["cursor"], "b_destination": right["cursor"],
         "same_target": left["value_after_derived"] == right["value_after_derived"],
         "different_branch_outcomes": len(branch_diffs),
         "control_flow_differences": sum(d["type"] == "control_flow" for d in diffs),
-        "first_difference": diffs[0] if diffs else None,
+        "first_difference": priority[0] if priority else (register_groups[0] if register_groups else None),
         "interpretation": "Pontos candidatos para investigação manual; nenhuma causa foi demonstrada.",
     }
     return result
