@@ -15,10 +15,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .analysis import build_xrefs, seed_roots
-from .core import Rom, cpu_to_file, file_to_cpu
+from .core import Rom, CpuState
 
 MAX_ROM_BYTES = 16 * 1024 * 1024 + 512
-ANALYZER_VERSION = "1.0.0"
+ANALYZER_VERSION = "1.1.0"
 KNOWN_ROM_SHA = "f512ef861f0df2dbb8f9563fb5f3b01ab70b7048ac329a9262ff3d34ca487bdd"
 STAGES = ("identity", "banks", "entrypoints", "control_flow")
 EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="umk3-intel")
@@ -60,7 +60,7 @@ def analyze_rom(data: bytes, progress=None) -> dict:
 
     callback("control_flow", "running")
     root_offsets = list(dict.fromkeys(r["offset"] for r in roots if r["name"] == "reset"))
-    xrefs = build_xrefs(rom, root_offsets, max_instructions=3000, max_entries=10000) if root_offsets else {
+    xrefs = build_xrefs(rom, root_offsets, max_instructions=3000, max_entries=10000, initial_state=CpuState(e=True, m=True, x=True)) if root_offsets else {
         "roots": [], "instructions": 0, "references": [], "ambiguous": [],
         "truncated": False, "limitations": "Nenhum vetor de reset mapeável encontrado.",
     }
