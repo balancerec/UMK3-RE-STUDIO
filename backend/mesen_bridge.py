@@ -26,9 +26,10 @@ def _list_addrs(value: str, *, kind: str) -> list[int]:
                 raise ValueError("Endereço CPU fora de 24 bits.")
         else:
             # O offset físico é 0..1FFFF: 128 KiB
-            if raw.upper().replace(":", "").removeprefix("$").startswith("7E") and n >= 0x7E0000:
-                if n <= 0x7FFFFF:
-                    n -= 0x7E0000
+            # Endereços de barramento 7E:xxxx ou 7F:xxxx usam offset WRAM
+            # físico 00000..1FFFF; os demais valores já são offsets.
+            if 0x7E0000 <= n <= 0x7FFFFF:
+                n -= 0x7E0000
             if not 0 <= n <= 0x1FFFF:
                 raise ValueError(f"WRAM fora do intervalo 00000-1FFFF: {raw!r}.")
         if n not in values:
