@@ -2,9 +2,9 @@
 :root{color-scheme:dark;font-family:Inter,Segoe UI,Arial,sans-serif;background:#0d1015;color:#e8edf4}*{box-sizing:border-box}body{margin:0}header{background:#151920;border-bottom:1px solid #303744;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}h1{font-size:19px;margin:0;font-weight:750;letter-spacing:.4px}h1 b{color:#e23f50}small{color:#8b98a9}button,.button{cursor:pointer;color:#e9edf4;background:#242b37;border:1px solid #3d485b;border-radius:7px;padding:9px 12px;font-size:12px}button:hover{border-color:#ea4456}button.accent{background:#c52f43;border-color:#e14657}.status{font-size:12px;color:#97a9b9}main{padding:18px;display:grid;grid-template-columns:290px minmax(480px,1fr) 290px;gap:14px;min-height:calc(100vh - 64px)}section,.panel{background:#171c25;border:1px solid #2d3543;border-radius:11px;overflow:hidden}section h2,.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#a8b4c5;margin:0;padding:15px;border-bottom:1px solid #2d3543}.panel-content{padding:14px}.muted{color:#91a0b4}.stack{display:flex;flex-direction:column;gap:10px}.split{display:flex;gap:6px;align-items:center;flex-wrap:wrap}label{font-size:11px;color:#adbbcb}input,select{color:#dbe6ef;background:#0f131b;border:1px solid #3a4555;border-radius:6px;padding:8px;font:12px Consolas,monospace;min-width:0}input[type=file]{width:100%}input[type=number]{width:80px}input[type=text]{width:110px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:#10151d;border-radius:8px;padding:10px;min-width:0}.stat strong{display:block;font:15px Consolas,monospace;color:#f2f5fa;margin-top:6px;overflow-wrap:anywhere}.stat span{color:#8c9bad;font-size:10px}table{width:100%;border-collapse:collapse;font:12px Consolas,monospace}th{text-align:left;position:sticky;top:0;background:#252b36;color:#afbecf;font:11px Segoe UI;padding:9px}td{padding:7px 9px;border-bottom:1px solid #29313d}tr:hover td{background:#25303f}tr.selected td{background:#532a35}td.click{color:#ff7788;cursor:pointer}.scroll{max-height:calc(100vh - 250px);overflow:auto}.tablewrap{overflow:auto;max-height:65vh}#hexout{font:12px/1.9 Consolas,monospace;white-space:pre;overflow:auto;max-height:30vh;background:#0e131b;padding:14px;border-radius:8px}#hexout em{color:#f36d78;font-style:normal}.tabs{display:flex;border-bottom:1px solid #303948;overflow-x:auto;white-space:nowrap}.tabs button{border:0;border-radius:0;background:transparent;padding:13px 19px}.tabs button.active{color:#ff687b;border-bottom:2px solid #e74258}.view{padding:16px}.pill{display:inline-block;border-radius:99px;padding:3px 8px;background:#234234;color:#83dfb8;font-size:10px}.pill.warn{background:#503a21;color:#ffd395}.foot{font-size:11px;color:#8b9aa9;line-height:1.6}#banks{max-height:340px;overflow:auto}#banks button{width:100%;text-align:left;margin-bottom:4px;background:#111720;display:flex;justify-content:space-between}#banks button.sel{background:#552530;border-color:#df495a}#log{background:#10151d;color:#a4d9ac;padding:10px;font:11px Consolas,monospace;min-height:55px;max-height:100px;overflow:auto}a{color:#ff7c8b}@media(max-width:1100px){main{grid-template-columns:250px 1fr}aside.right{grid-column:1/-1}}@media(max-width:750px){main{display:block}section{margin-bottom:12px}}
 
 .gfx-preview{background:repeating-conic-gradient(#202732 0% 25%,#111821 0% 50%) 50%/20px 20px;border:1px solid #394457;border-radius:8px;min-height:100px;max-width:100%;image-rendering:pixelated;display:block}.gfx-palette{display:grid;grid-template-columns:repeat(16,minmax(8px,1fr));gap:2px}.gfx-color{height:19px;border:1px solid #29313a;cursor:crosshair}.gfx-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.gfx-controls label{display:flex;flex-direction:column;gap:4px}.gfx-controls input{width:85px}.gfx-controls select{width:95px}.gfx-preview-area{overflow:auto;max-height:55vh;max-width:100%}
-</style></head><body><header><div><h1><b>UMK3</b> / REVERSE ENGINEERING STUDIO <small>v1.0.1</small></h1><small>SNES 65C816 · ExHiROM · Mesen CDL</small></div><span class="status" id="status">ROM não carregada</span></header><main>
+ .cn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.cn-grid label{display:flex;flex-direction:column;gap:6px;min-width:0}.cn-grid input,.cn-grid select{width:100%}.cn-preview{background:#151c25;border:1px solid #3c4658;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}.cn-preview code{font-size:14px;overflow-wrap:anywhere;color:#f7cb70}.cn-preview small{color:#9daabf}#cnwarning:not(:empty){color:#ff9999}#cnstatus{min-height:18px}</style></head><body><header><div><h1><b>UMK3</b> / REVERSE ENGINEERING STUDIO <small>v1.0.1</small></h1><small>SNES 65C816 · ExHiROM · Mesen CDL</small></div><span class="status" id="status">ROM não carregada</span></header><main>
 <aside class="stack"><section><h2>Projeto e arquivos</h2><div class="panel-content stack"><label>Projetos locais (SQLite)</label><div class="split"><select id="projects" style="flex:1;min-width:0"><option value="">Sessão temporária</option></select><button id="openproject">Abrir</button></div><div class="split"><input id="projectname" type="text" placeholder="Nome do projeto" style="flex:1"/><button class="accent" id="createproject">Criar</button></div><div class="foot" id="projectstatus">Crie um projeto para guardar ROM, CDL e símbolos entre sessões.</div><label>ROM (.sfc/.smc/.dmp)</label><input id="rom" type="file"/><label>ROM original para comparação</label><input id="compare" type="file"/><label>Cobertura Mesen (.cdl)</label><input id="cdl" type="file"/><label>Símbolos Mesen (.mlb)</label><input id="mlb" type="file"/><div class="grid" id="metadata"></div></div></section><section><h2>Mapa dos bancos</h2><div class="panel-content"><div id="banks"><span class="muted">Importe a ROM para listar bancos.</span></div></div></section></aside>
-<section><div class="tabs"><button class="active" data-tab="code">65C816 Disassembler</button><button data-tab="hex">Hex Editor (leitura)</button><button data-tab="blocks">Basic Block</button><button data-tab="graph">CFG / Xrefs</button><button data-tab="characters">Personagens</button><button data-tab="memory">Memory Analyzer</button><button data-tab="graphics">Graphics Explorer</button><button data-tab="extract">Sprite Extraction Engine</button><button data-tab="dma">DMA / Compression Analyzer</button><button data-tab="trace">DMA Trace v0.7</button><button data-tab="capture">Mesen Capture v0.8</button><button data-tab="correlation">DMA Correlation v0.9</button><button data-tab="research">Decompression Lab v1.0</button><button data-tab="hidden">Hidden Roster Analyzer</button></div><div class="view"><div class="split" style="margin-bottom:14px"><label>ROM offset</label><input id="offset" type="text" value="000000"/><label>M</label><select id="m"><option value="1">8-bit</option><option value="0">16-bit</option></select><label>X</label><select id="x"><option value="1">8-bit</option><option value="0">16-bit</option></select><label>E</label><select id="e"><option value="0">Native</option><option value="1">Emulation</option></select><button class="accent" id="go">Analisar</button></div><div id="mainview"><div class="muted">Carregue a ROM Deluxe 2.2 para iniciar a análise.</div></div></div><section style="margin:10px"><h2>Log de operações</h2><div id="log">Pronto.</div></section></section>
+<section><div class="tabs"><button class="active" data-tab="code">65C816 Disassembler</button><button data-tab="hex">Hex Editor (leitura)</button><button data-tab="blocks">Basic Block</button><button data-tab="graph">CFG / Xrefs</button><button data-tab="characters">Personagens</button><button data-tab="memory">Memory Analyzer</button><button data-tab="graphics">Graphics Explorer</button><button data-tab="extract">Sprite Extraction Engine</button><button data-tab="dma">DMA / Compression Analyzer</button><button data-tab="trace">DMA Trace v0.7</button><button data-tab="capture">Mesen Capture v0.8</button><button data-tab="correlation">DMA Correlation v0.9</button><button data-tab="research">Decompression Lab v1.0</button><button data-tab="hidden">Hidden Roster Analyzer</button><button data-tab="namer">Gerador de Nomes</button><button data-tab="execution">Execution Research</button></div><div class="view"><div class="split" style="margin-bottom:14px"><label>ROM offset</label><input id="offset" type="text" value="000000"/><label>M</label><select id="m"><option value="1">8-bit</option><option value="0">16-bit</option></select><label>X</label><select id="x"><option value="1">8-bit</option><option value="0">16-bit</option></select><label>E</label><select id="e"><option value="0">Native</option><option value="1">Emulation</option></select><button class="accent" id="go">Analisar</button></div><div id="mainview"><div class="muted">Carregue a ROM Deluxe 2.2 para iniciar a análise.</div></div></div><section style="margin:10px"><h2>Log de operações</h2><div id="log">Pronto.</div></section></section>
 <aside class="right stack"><section><h2>Endereço e símbolos</h2><div class="panel-content stack"><label>Endereço CPU (ex. C8:A53C)</label><div class="split"><input id="cpu" type="text" value="C8:A53C"/><button id="translate">Ir</button></div><div id="translated" class="foot">Mapeamento ExHiROM disponível após abrir a ROM.</div><label>Localizar símbolo</label><input id="symbolsearch" type="text" placeholder="Nome ou endereço" style="width:100%"/><div id="symbols" class="scroll" style="max-height:210px"></div><div class="grid"><input id="newsymbol" type="text" placeholder="Novo label" style="width:100%"/><button id="addsymbol">Adicionar label</button></div><button id="export">Exportar símbolos MLB</button></div></section><section><h2>Referências de engenharia reversa</h2><div class="panel-content foot"><b>Pontos documentados</b><p>ROM: <code>0x08A53C</code> → <code>JML $D0:5E62</code></p><p>WRAM IDs candidatos:<br/><code>$7E:36D0</code><br/><code>$7E:52C8</code></p><p>As funções ainda não receberam nomes semânticos validados.</p><span class="pill warn">Análise somente leitura</span></div></section></aside>
 </main><script>
 const $=s=>document.querySelector(s);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let active='code',currentBank=0,banks=[];const fmt=(n,w=6)=>n.toString(16).toUpperCase().padStart(w,'0');
@@ -15,7 +15,164 @@ fileUpload('#rom','rom',async()=>{$('#offset').value='000000';await render()});f
 async function refresh(){let s=await req('status');$('#projectstatus').textContent=s.project_id?'Projeto ativo: '+s.project_id:'Sessão temporária: arquivos não serão preservados após reiniciar';$('#status').textContent=s.ready?'ROM ABERTA · '+s.rom.mapping.toUpperCase():'ROM não carregada';if(!s.ready)return;$('#metadata').innerHTML=[['ROM',s.rom.title],['Tamanho',(s.rom.bytes/1048576).toFixed(1)+' MiB'],['Mapeamento',s.rom.mapping.toUpperCase()],['SHA-256',s.rom.sha256.slice(0,14)+'…'],['Checksum',s.rom.checksum],['CDL',s.cdl?s.cdl.marked.toLocaleString('pt-BR'):'—']].map(([k,v])=>`<div class="stat"><span>${k}</span><strong>${v}</strong></div>`).join('');banks=await req('banks');$('#banks').innerHTML=banks.map(b=>`<button class="${b.index===currentBank?'sel':''}" data-bank="${b.index}"><span>Banco ${fmt(b.index,2)} · ${fmt(b.offset)}</span><small>${b.code||0} code / ${b.different===null?'—':b.different} Δ</small></button>`).join('');document.querySelectorAll('[data-bank]').forEach(el=>el.onclick=()=>{currentBank=Number(el.dataset.bank);$('#offset').value=fmt(currentBank*65536);refreshBanks();render()});await listSymbols()}
 function refreshBanks(){document.querySelectorAll('[data-bank]').forEach(el=>el.classList.toggle('sel',Number(el.dataset.bank)===currentBank))}
 function offset(){let s=$('#offset').value.trim().replace(/^0x/i,'');let n=parseInt(s,16);return Number.isFinite(n)?n:0}
-async function render(){try{let o=offset(),m=$('#m').value,x=$('#x').value,e=$('#e').value;currentBank=Math.floor(o/65536);refreshBanks();if(active==='hidden'){
+
+function renderCaptureNamer(){
+  const docsUrl='https://github.com/balancerec/UMK3-RE-STUDIO/blob/feat/decision-trace-diff-v3/docs/PADRAO_NOMENCLATURA_CAPTURAS.md';
+  $('#mainview').innerHTML=[
+    '<div class="stack"><h3>Capture Manager — Gerador de Nomes <span class="pill">v1.0</span></h3>',
+    '<p class="foot">Padronize dumps, traces e capturas do Mesen por versão da ROM, experimento, etapa e estado observado. Não altera a ROM nem os arquivos importados.</p>',
+    '<div class="cn-grid">',
+    '<label>Versão da ROM<select id="cnver"><option value="v2.2">Deluxe 2.2</option><option value="v2.3">Deluxe 2.3</option></select></label>',
+    '<label>Experimento<input id="cnexp" value="001" maxlength="8" placeholder="001"></label>',
+    '<label>Etapa<select id="cnstage"><option value="di">DI · Inicial</option><option value="df">DF · Final</option><option value="dbp01" selected>DBP01 · Breakpoint 01</option><option value="dbp02">DBP02 · Breakpoint 02</option><option value="dbp03">DBP03 · Breakpoint 03</option><option value="dmid01">DMID01 · Intermediário 01</option><option value="dmid02">DMID02 · Intermediário 02</option><option value="dstep096">DSTEP096 · Exatamente 96 passos</option><option value="trc">TRC · Trace</option><option value="ss">SS · Screenshot</option><option value="meta">META · Manifesto</option></select></label>',
+    '<label>Estado visual / personagem<input id="cncharacter" value="shaokahn" placeholder="ermac / subzero / slotoculto" maxlength="50"></label>',
+    '<label>Tipo de arquivo<select id="cnkind"><option value="wram">WRAM · RAM do SNES</option><option value="vram">VRAM · vídeo</option><option value="oam">OAM · sprites</option><option value="cgram">CGRAM · paletas</option><option value="cpumem">CPU Memory</option><option value="spcram">SPC RAM</option><option value="trace">Trace Logger</option><option value="screenshot">Screenshot</option><option value="state">Save State (extensão original)</option><option value="meta">Metadados JSON</option></select></label>',
+    '<label>PC no instante da captura (opcional)<input id="cnpc" value="86A385" placeholder="86A385" maxlength="8"></label>',
+    '<label>Extensão do Save State (se aplicável)<input id="cnstateext" placeholder="extensão exportada pelo Mesen" maxlength="12" disabled></label>',
+    '<label>SHA-256 da ROM (opcional)<input id="cnsha" placeholder="64 dígitos hex" maxlength="64"></label>',
+    '</div>',
+    '<p class="foot" id="cnwarning"></p>',
+    '<div class="cn-preview"><small>NOME GERADO</small><code id="cnname"></code></div>',
+    '<div class="split"><button id="cncopy" class="accent">Copiar nome</button><button id="cnmanifest">Baixar manifesto JSON</button><a id="cndocs" target="_blank" rel="noopener noreferrer">Ler convenção Markdown ↗</a></div>',
+    '<p class="foot" id="cnstatus">Campos locais: nenhum arquivo é enviado ao servidor.</p>',
+    '<section><h3>Siglas e exemplos</h3><table><thead><tr><th>Etapa</th><th>Significado</th><th>Exemplo</th></tr></thead><tbody>',
+    '<tr><td><code>di</code></td><td>Dump inicial</td><td><code>umk3dx_v2.2_exp001_di_ermac_wram.dmp</code></td></tr>',
+    '<tr><td><code>df</code></td><td>Dump final</td><td><code>umk3dx_v2.2_exp001_df_subzero_wram.dmp</code></td></tr>',
+    '<tr><td><code>dbp01</code></td><td>Primeira parada</td><td><code>umk3dx_v2.2_exp001_dbp01_pc86a385_shaokahn_wram.dmp</code></td></tr>',
+    '<tr><td><code>dmid01</code></td><td>Intermediário (passos incertos)</td><td><code>umk3dx_v2.2_exp001_dmid01_shaokahn_oam.dmp</code></td></tr>',
+    '<tr><td><code>dstep096</code></td><td>96 passos exatos</td><td><code>umk3dx_v2.2_exp001_dstep096_shaokahn_cgram.dmp</code></td></tr>',
+    '</tbody></table><p class="foot">Contagem aproximada: use DMID, não DSTEP. O PC é o contador de programa efetivo, não apenas o endereço de um breakpoint cadastrado.</p></section></div>'
+  ].join('');
+  $('#cndocs').href=docsUrl;
+  const ids=['cnver','cnexp','cnstage','cncharacter','cnkind','cnpc','cnstateext','cnsha'];
+  const input=id=>$('#'+id).value.trim();
+  const slug=v=>v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const extFor=kind=>kind==='trace'?'txt':kind==='screenshot'?'png':kind==='meta'?'json':kind==='state'?slug(input('cnstateext')):'dmp';
+  function build(){
+    const ver=input('cnver'), stage=input('cnstage'), kind=input('cnkind');
+    const rawExp=input('cnexp'), rawPC=input('cnpc').replace(/^[$]/,'').replace(':','');
+    const state=slug(input('cncharacter')), sha=input('cnsha').toLowerCase();
+    const errors=[];
+    if(!/^\d{1,8}$/.test(rawExp))errors.push('Experimento: informe apenas números (1–8 dígitos).');
+    if(!state)errors.push('Informe um personagem/estado visual.');
+    if(rawPC && !/^[0-9a-fA-F]{6}$/.test(rawPC))errors.push('PC: informe exatamente 6 dígitos hexadecimais (ex.: 86A385).');
+    if(sha && !/^[a-f0-9]{64}$/.test(sha))errors.push('SHA-256: forneça 64 dígitos hexadecimais ou deixe vazio.');
+    if(kind==='state' && !/^[a-z0-9]{1,10}$/.test(extFor(kind)))errors.push('Informe a extensão original do save state.');
+    const exp=rawExp.padStart(3,'0');
+    const pcPart=stage.startsWith('dbp')&&rawPC?'_pc'+rawPC.toLowerCase():'';
+    const filename=errors.length?'':'umk3dx_'+ver+'_exp'+exp+'_'+stage+pcPart+'_'+state+'_'+kind+'.'+extFor(kind);
+    $('#cnwarning').textContent=errors.join(' ');
+    $('#cnname').textContent=filename||'Corrija os campos acima.';
+    $('#cncopy').disabled=$('#cnmanifest').disabled=!!errors.length;
+    return {filename,errors,ver,exp,stage,kind,state,pc:rawPC.toUpperCase()||null,sha:sha||null};
+  }
+  ids.forEach(id=>{$('#'+id).addEventListener('input',build);$('#'+id).addEventListener('change',()=>{
+    if(id==='cnkind')$('#cnstateext').disabled=input('cnkind')!=='state';
+    build();
+  })});
+  $('#cncopy').onclick=async()=>{
+    const info=build();if(info.errors.length)return;
+    try{
+      await navigator.clipboard.writeText(info.filename);
+      $('#cnstatus').textContent='Nome copiado.';
+    }catch(error){
+      const tmp=document.createElement('textarea');tmp.value=info.filename;document.body.appendChild(tmp);tmp.select();
+      const ok=document.execCommand('copy');tmp.remove();
+      $('#cnstatus').textContent=ok?'Nome copiado.':'Não foi possível copiar; selecione o nome na prévia.';
+    }
+  };
+  $('#cnmanifest').onclick=()=>{
+    const x=build();if(x.errors.length)return;
+    const obj={
+      schema_version:'1.0',
+      experiment_id:'EXP'+x.exp,
+      rom:{family:'umk3dx',version:x.ver,sha256:x.sha},
+      emulator:{name:'Mesen 2',version:null},
+      experiment:{description:null,start_visual:null,end_visual:null},
+      capture:{stage:x.stage,visual_state:x.state,resolved_character_id:null,
+        pc_at_capture:x.stage.startsWith('dbp')?x.pc:null,
+        breakpoint:{memory_type:null,access:null,address:null},
+        steps_exact:x.stage.startsWith('dstep')?Number(x.stage.slice(5)):null,
+        steps_estimated:null,time_utc:null},
+      artifacts:[{filename:x.filename,type:x.kind,sha256:null,size_bytes:null}],
+      notes:'Preencha os campos não verificados após a coleta. PC indica a instrução efetivamente parada.'
+    };
+    const blob=new Blob([JSON.stringify(obj,null,2)+'\n'],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='umk3dx_'+x.ver+'_exp'+x.exp+'_meta.json';a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    $('#cnstatus').textContent='Manifesto JSON gerado localmente; complete os campos pendentes.';
+  };
+  build();
+}
+
+
+function renderExecutionResearch(){
+  $('#mainview').innerHTML=[
+    '<div class="stack"><h3>Execution Research <span class="pill warn">Mesen Bridge v0.1 · POC</span></h3>',
+    '<p class="foot">Preencha os endereços, gere um agente Lua validado e execute-o na janela de scripts do MesenCE. Esta versão NÃO controla diretamente o emulador. A ROM aberta no Studio é analisada separadamente.</p>',
+    '<div class="cn-grid">',
+    '<label>PC inicial (CPU, 24 bits)<input id="erpc" value="86A353" maxlength="8" placeholder="86A353"></label>',
+    '<label>Sessão / experimento<input id="ersession" value="exp001_run01" maxlength="48"></label>',
+    '<label>Máximo de eventos<input id="erlimit" value="20000" type="number" min="1" max="20000"></label>',
+    '<label>CPU Execute (vírgulas)<textarea id="ercpu" rows="3">86A353,86A355,86A385,86A733,86A738,86A73A,86A7A8</textarea></label>',
+    '<label>WRAM Write — offsets (vírgulas)<textarea id="erwram" rows="3">0C0E,3A50,36D0,52C8,1C59</textarea></label>',
+    '</div>',
+    '<div class="split"><button id="erdownload" class="accent">Gerar agente Lua</button><button id="erprofile">Copiar perfil JSON</button></div>',
+    '<p class="foot" id="erstatus">Agente: ainda não gerado. Sem conexão com o Mesen.</p>',
+    '<section><h3>Analisar captura JSONL</h3>',
+    '<p class="foot">Importe o arquivo gerado pelo script para visualizar eventos, endereços monitorados e hotspots. Somente leitura: nenhum dado da ROM será alterado.</p>',
+    '<input id="erjsonl" type="file" accept=".jsonl,.txt,application/x-ndjson">',
+    '<pre id="erresults" style="max-height:390px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere"></pre></section>',
+    '<section><h3>Procedimento de teste</h3>',
+    '<p class="foot">1. Mantenha aberta a ROM correta no MesenCE. 2. Carregue o script no Script Window. 3. Faça uma movimentação controlada. 4. Verifique os eventos gerados; não considere valores pós-escrita confirmados até validarmos a fase dos callbacks.</p>',
+    '<p class="foot">Para salvar JSONL em arquivo, habilite I/O nas restrições da janela de scripts e defina OUTPUT_PATH no Lua. Sem I/O, os eventos aparecem no log do Script Window, sujeito a limite de histórico.</p>',
+    '<p class="foot"><a href="https://github.com/balancerec/UMK3-RE-STUDIO/blob/feat/decision-trace-diff-v3/tools/mesen_bridge/README.md" target="_blank" rel="noopener noreferrer">Instruções completas do agente ↗</a></p>',
+    '</section></div>'
+  ].join('');
+  const get=()=>({
+    pc:$('#erpc').value.trim(), session_id:$('#ersession').value.trim(),
+    cpu_points:$('#ercpu').value.trim(),wram_points:$('#erwram').value.trim(),
+    max_events:$('#erlimit').value.trim()
+  });
+  $('#erjsonl').onchange=async e=>{
+    const file=e.target.files&&e.target.files[0];if(!file)return;
+    if(file.size>16*1024*1024){$('#erresults').textContent='Limite: 16 MiB por captura.';return;}
+    $('#erresults').textContent='Validando eventos...';
+    try{
+      const data=new FormData();data.append('file',file);
+      const result=await fetch('/api/mesen-bridge/analyze',{method:'POST',body:data});
+      const json=await result.json();
+      if(!result.ok)throw Error(typeof json.detail==='string'?json.detail:JSON.stringify(json.detail));
+      $('#erresults').textContent=JSON.stringify(json,null,2);
+    }catch(error){$('#erresults').textContent='ERRO: '+error.message}
+  };
+  $('#erprofile').onclick=async()=>{
+    try{
+      const c=get();const v=JSON.stringify({schema_version:'0.1',...c},null,2);
+      await navigator.clipboard.writeText(v);$('#erstatus').textContent='Perfil JSON copiado (configuração, não uma captura).';
+    }catch(e){$('#erstatus').textContent='Não foi possível copiar: '+e.message}
+  };
+  $('#erdownload').onclick=async()=>{
+    const button=$('#erdownload');button.disabled=true;
+    $('#erstatus').textContent='Validando e gerando agente...';
+    try{
+      const params=new URLSearchParams(get());
+      const result=await fetch('/api/mesen-bridge/script?'+params.toString());
+      if(!result.ok)throw Error((await result.text()).slice(0,400));
+      const source=await result.text();
+      const blob=new Blob([source],{type:'text/plain;charset=utf-8'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='umk3_capture_'+get().session_id+'.lua';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      $('#erstatus').textContent='Script Lua gerado. Abra-o no Script Window do MesenCE; integração nativa ainda não implementada.';
+    }catch(e){$('#erstatus').textContent='ERRO: '+e.message}
+    finally{button.disabled=false}
+  };
+}
+
+async function render(){try{if(active==='execution'){renderExecutionResearch();return;}if(active==='namer'){renderCaptureNamer();return;}let o=offset(),m=$('#m').value,x=$('#x').value,e=$('#e').value;currentBank=Math.floor(o/65536);refreshBanks();if(active==='hidden'){
 const st=await req('hidden-roster/status');
 $('#mainview').innerHTML=`<div class="stack"><h3>Hidden Roster Analyzer v2 <span class="pill warn">Somente leitura</span></h3>
 <p class="foot">Importe um trace do Mesen (65C816). O valor mostrado após "=" é anterior à execução: um valor gravado só é <b>CONFIRMADO</b> por leitura posterior; antes disso é <b>DERIVADO</b> dos registradores. Nada é inventado quando o trace não traz o dado.</p>
@@ -54,7 +211,52 @@ function paint(r){
   $('#hrdetail').innerHTML=`<div class="stack"><div><b>${esc(e.pc)}</b> (canônico ${esc(e.pc_canon)}) <code>${esc(e.instruction)}</code> · ${e.access} · ${esc(e.address)} ${e.address_basis?'· endereço '+esc(e.address_basis):''} <button id="hrgo">Abrir no disassembler</button></div><div>Base do valor gravado: ${esc(e.after_basis)}${e.confirmed_by_seq?' · confirmado na linha '+e.confirmed_by_seq:''}</div><div>${esc(e.evidence)}</div><div>Registradores (antes da execução): <code>${Object.entries(e.registers).map(([k,v])=>k+':'+esc(v)).join(' ')||'não informados no trace'}</code></div><div>Pilha de chamadas: <code>${esc(e.context.pilha_de_chamadas.join(' | ')||'—')}</code></div><div>Instruções anteriores: <code>${e.context.instrucoes_anteriores.map(esc).join(' ⏎ ')||'—'}</code></div></div>`;
   $('#hrgo').onclick=()=>{if(!$('#cpu'))return;$('#cpu').value=e.pc_canon.replace('$','');goCpu($('#cpu').value);};});
 }
-$('#hrrun').onclick=async()=>{try{const f=$('#hrfile').files[0];if(!f)throw Error('Selecione um arquivo de trace');log('Analisando '+f.name);const d=new FormData();d.append('file',f);const r=await req('hidden-roster/analyze?max_events='+Number($('#hrmax').value),{method:'POST',body:d});window.hrData=r;flt.var=flt.character=flt.access=flt.min='';paint(r);$('#hrstatus').textContent='Trace analisado: '+f.name;log('Hidden Roster: '+r.meta.events+' eventos')}catch(e){$('#hrstatus').textContent='ERRO: '+e.message}};
+$('#hrrun').onclick=async()=>{try{const f=$('#hrfile').files[0];if(!f)throw Error('Selecione um arquivo de trace');if(f.size>128*1024*1024)throw Error('Trace acima de 128 MiB: utilize um recorte com as instruções de interesse. Para comparar duas decisões, use o Decision Trace Diff v3 abaixo.');log('Analisando '+f.name);const d=new FormData();d.append('file',f);const r=await req('hidden-roster/analyze?max_events='+Number($('#hrmax').value),{method:'POST',body:d});window.hrData=r;flt.var=flt.character=flt.access=flt.min='';paint(r);$('#hrstatus').textContent='Trace analisado: '+f.name;log('Hidden Roster: '+r.meta.events+' eventos')}catch(e){$('#hrstatus').textContent='ERRO: '+e.message}};
+
+/* v3 Decision Trace Diff — duas capturas reais, sem alterar a ROM. */
+const diffBox=document.createElement('section');
+diffBox.className='stack';
+diffBox.innerHTML=`<h3>Decision Trace Diff v3 <span class="pill warn">Comparação de evidências</span></h3>
+<p class="foot">Trace A: primeiro caminho do cursor. Trace B: segundo caminho. Para investigar o slot, compare uma tentativa bloqueada com outra acessível; traces com destinos diferentes não comprovam bloqueio. Os arquivos devem conter STA em 86:A7A8 e instruções anteriores.</p>
+<div class="split"><label>Trace A <input id="ddfilea" type="file" accept=".txt,.log,.trace"></label><label>Trace B <input id="ddfileb" type="file" accept=".txt,.log,.trace"></label></div>
+<div class="split"><label>Ocorrência A <input id="ddorda" type="number" min="1" value="1"></label><label>Ocorrência B <input id="ddordb" type="number" min="1" value="1"></label><label>Instruções anteriores <input id="ddlook" type="number" min="1" max="1000" value="160"></label><button id="ddrun" class="accent">Comparar decisões</button><button id="ddexport">Exportar JSON</button></div>
+<p class="foot" id="ddstatus">Nenhuma comparação realizada.</p><div id="ddout"></div>`;
+$('#mainview').appendChild(diffBox);
+let diffResult=null;
+$('#ddrun').onclick=async()=>{
+ try{
+  const a=$('#ddfilea').files[0],b=$('#ddfileb').files[0];
+  if(!a||!b)throw Error('Selecione dois arquivos de trace.');
+  const fd=new FormData();fd.append('trace_a',a);fd.append('trace_b',b);
+  const path='hidden-roster/decision-diff?ordinal_a='+Number($('#ddorda').value)+'&ordinal_b='+Number($('#ddordb').value)+'&lookback='+Number($('#ddlook').value);
+  const out=await req(path,{method:'POST',body:fd});diffResult=out;
+  const summary=out.summary||{};
+  const counts=out.difference_counts||{};
+  const lines=[
+   'A: '+(out.a.found?out.a.cursor+' / '+out.a.anchor.pc+' / linha '+out.a.anchor.line:'nenhum STA encontrado'),
+   'B: '+(out.b.found?out.b.cursor+' / '+out.b.anchor.pc+' / linha '+out.b.anchor.line:'nenhum STA encontrado'),
+   'Desvios condicionais diferentes: '+(counts.branch_outcomes||0),
+   'Caminhos diferentes: '+(counts.control_flow||0),
+   'Valores de memória diferentes: '+(counts.memory_value||0),
+   'Alterações de registradores: '+(counts.register_occurrences||0)+' ocorrências em '+(counts.register_groups||0)+' grupos',
+   'Não há comprovação automática da causa de bloqueio.'
+  ];
+  const div=$('#ddout');div.replaceChildren();
+  const p=document.createElement('pre');p.style.whiteSpace='pre-wrap';p.textContent=lines.join('\n');div.appendChild(p);
+  if(out.diagnostics&&out.diagnostics.length){
+   const note=document.createElement('p');note.className='foot';note.textContent=out.diagnostics.join(' | ');div.appendChild(note);
+  }
+  const detail=document.createElement('details');const title=document.createElement('summary');title.textContent='Ver diferenças agrupadas e evidências';detail.appendChild(title);
+  const pre=document.createElement('pre');pre.style.whiteSpace='pre-wrap';pre.style.maxHeight='390px';pre.style.overflow='auto';pre.textContent=JSON.stringify({branch_differences:out.branch_differences,differences:out.differences},null,2);detail.appendChild(pre);div.appendChild(detail);
+  $('#ddstatus').textContent='Comparação concluída: '+a.name+' × '+b.name;
+ }catch(e){$('#ddstatus').textContent='ERRO: '+e.message;}
+};
+$('#ddexport').onclick=()=>{
+ if(!diffResult){$('#ddstatus').textContent='Compare dois traces antes de exportar.';return;}
+ const blob=new Blob([JSON.stringify(diffResult,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='decision_trace_diff_v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
 if(window.hrData)paint(window.hrData);
 return;}
 if(active==='research'){

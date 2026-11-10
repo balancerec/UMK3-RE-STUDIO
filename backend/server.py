@@ -158,6 +158,32 @@ def translate(cpu:str|None=None,offset:int|None=None):
     if offset is not None:return {'offset':offset,'cpu':f'{file_to_cpu(offset,session.rom.mapping):06X}' if file_to_cpu(offset,session.rom.mapping) is not None else None}
     raise HTTPException(422,'Informe cpu ou offset')
 
+@app.post('/api/mesen-bridge/analyze')
+async def mesen_bridge_analyze(file: UploadFile = File(...)):
+    from .mesen_bridge_events import analyze_capture_jsonl, MAX_BYTES
+    raw = await file.read(MAX_BYTES + 1)
+    try:
+        return analyze_capture_jsonl(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.get('/api/mesen-bridge/script')
+def mesen_bridge_script(
+    pc: str = '86A353',
+    cpu_points: str = '86A353,86A355,86A385,86A733,86A738,86A73A,86A7A8',
+    wram_points: str = '0C0E,3A50,36D0,52C8,1C59',
+    session_id: str = 'exp001_run01',
+    max_events: int = 20000,
+):
+    from .mesen_bridge import generate_capture_script
+    try:
+        lua = generate_capture_script(pc, cpu_points, wram_points, session_id, max_events)
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return Response(content=lua, media_type='text/plain; charset=utf-8',
+                    headers={'Content-Disposition': 'attachment; filename="umk3_capture.lua"',
+                             'X-Content-Type-Options': 'nosniff'})
+
 @app.get('/')
 def index():return FileResponse(Path(__file__).parent/'static'/'index.html')
 
@@ -540,3 +566,23 @@ def hidden_roster_export_json(var:str|None=None,character:str|None=None,access:s
 def hidden_roster_export_csv(var:str|None=None,character:str|None=None,access:str|None=None,min_confidence:str|None=None):
     _,ev=_hr_filtered(var,character,access,min_confidence)
     return PlainTextResponse(events_to_csv(ev),media_type='text/csv',headers={'Content-Disposition':'attachment; filename="hidden_roster_timeline.csv"'})
+
+
+# v3.0 — compara duas decisões de navegação; arquivos tratados somente em memória.
+from .decision_trace_diff import compare_traces
+
+@app.post('/api/hidden-roster/decision-diff')
+async def hidden_roster_decision_diff(
+    trace_a: UploadFile = File(...),
+    trace_b: UploadFile = File(...),
+    ordinal_a: int = Query(1, ge=1),
+    ordinal_b: int = Query(1, ge=1),
+    lookback: int = Query(160, ge=1, le=1000),
+):
+    raw_a = await trace_a.read(128 * 1024 * 1024 + 1)
+    raw_b = await trace_b.read(128 * 1024 * 1024 + 1)
+    try:
+        return compare_traces(raw_a, raw_b, ordinal_a=ordinal_a,
+                              ordinal_b=ordinal_b, lookback=lookback)
+    except ValueError as error:
+        raise HTTPException(422, str(error))
