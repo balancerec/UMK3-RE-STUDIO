@@ -79,3 +79,24 @@ def test_two_identical_traces_have_no_differences():
 def test_real_trace_is_optional_not_claimed():
     result = compare_traces(trace(0x10), trace(0x0A))
     assert "nenhuma causa foi demonstrada" in result["summary"]["interpretation"]
+
+
+def test_repeated_register_differences_are_grouped():
+    a = ("\n".join([
+        line(0x86A780+i, "nop", a=0x0010) for i in range(90)
+    ] + [line(0x86A7A8, "sta ($94)", a=0x0010, mem=3, ea=0x7E3A50)]) + "\n").encode()
+    b = ("\n".join([
+        line(0x86A780+i, "nop", a=0x000A) for i in range(90)
+    ] + [line(0x86A7A8, "sta ($94)", a=0x000A, mem=3, ea=0x7E3A50)]) + "\n").encode()
+    result = compare_traces(a, b)
+    assert result["difference_counts"]["register_occurrences"] >= 90
+    assert result["difference_counts"]["register_groups"] == 1
+    assert result["differences"][0]["type"] == "register_group"
+    assert result["differences"][0]["count"] >= 90
+    assert any("Sem desvio de fluxo" in note for note in result["diagnostics"])
+
+
+def test_decision_window_truncation_is_reported():
+    result = compare_traces(trace(0x10), trace(0x0A), lookback=160)
+    assert result["a"]["truncated_before"] is True
+    assert any("ampliar lookback" in note for note in result["diagnostics"])
