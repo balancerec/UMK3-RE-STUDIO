@@ -120,6 +120,10 @@ function renderExecutionResearch(){
     '</div>',
     '<div class="split"><button id="erdownload" class="accent">Gerar agente Lua</button><button id="erprofile">Copiar perfil JSON</button></div>',
     '<p class="foot" id="erstatus">Agente: ainda não gerado. Sem conexão com o Mesen.</p>',
+    '<section><h3>Analisar captura JSONL</h3>',
+    '<p class="foot">Importe o arquivo gerado pelo script para visualizar eventos, endereços monitorados e hotspots. Somente leitura: nenhum dado da ROM será alterado.</p>',
+    '<input id="erjsonl" type="file" accept=".jsonl,.txt,application/x-ndjson">',
+    '<pre id="erresults" style="max-height:390px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere"></pre></section>',
     '<section><h3>Procedimento de teste</h3>',
     '<p class="foot">1. Mantenha aberta a ROM correta no MesenCE. 2. Carregue o script no Script Window. 3. Faça uma movimentação controlada. 4. Verifique os eventos gerados; não considere valores pós-escrita confirmados até validarmos a fase dos callbacks.</p>',
     '<p class="foot">Para salvar JSONL em arquivo, habilite I/O nas restrições da janela de scripts e defina OUTPUT_PATH no Lua. Sem I/O, os eventos aparecem no log do Script Window, sujeito a limite de histórico.</p>',
@@ -131,6 +135,18 @@ function renderExecutionResearch(){
     cpu_points:$('#ercpu').value.trim(),wram_points:$('#erwram').value.trim(),
     max_events:$('#erlimit').value.trim()
   });
+  $('#erjsonl').onchange=async e=>{
+    const file=e.target.files&&e.target.files[0];if(!file)return;
+    if(file.size>16*1024*1024){$('#erresults').textContent='Limite: 16 MiB por captura.';return;}
+    $('#erresults').textContent='Validando eventos...';
+    try{
+      const data=new FormData();data.append('file',file);
+      const result=await fetch('/api/mesen-bridge/analyze',{method:'POST',body:data});
+      const json=await result.json();
+      if(!result.ok)throw Error(typeof json.detail==='string'?json.detail:JSON.stringify(json.detail));
+      $('#erresults').textContent=JSON.stringify(json,null,2);
+    }catch(error){$('#erresults').textContent='ERRO: '+error.message}
+  };
   $('#erprofile').onclick=async()=>{
     try{
       const c=get();const v=JSON.stringify({schema_version:'0.1',...c},null,2);
