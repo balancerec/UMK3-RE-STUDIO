@@ -158,6 +158,23 @@ def translate(cpu:str|None=None,offset:int|None=None):
     if offset is not None:return {'offset':offset,'cpu':f'{file_to_cpu(offset,session.rom.mapping):06X}' if file_to_cpu(offset,session.rom.mapping) is not None else None}
     raise HTTPException(422,'Informe cpu ou offset')
 
+@app.get('/api/mesen-bridge/script')
+def mesen_bridge_script(
+    pc: str = '86A353',
+    cpu_points: str = '86A353,86A355,86A385,86A733,86A738,86A73A,86A7A8',
+    wram_points: str = '0C0E,3A50,36D0,52C8,1C59',
+    session_id: str = 'exp001_run01',
+    max_events: int = 20000,
+):
+    from .mesen_bridge import generate_capture_script
+    try:
+        lua = generate_capture_script(pc, cpu_points, wram_points, session_id, max_events)
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return Response(content=lua, media_type='text/plain; charset=utf-8',
+                    headers={'Content-Disposition': 'attachment; filename="umk3_capture.lua"',
+                             'X-Content-Type-Options': 'nosniff'})
+
 @app.get('/')
 def index():return FileResponse(Path(__file__).parent/'static'/'index.html')
 
