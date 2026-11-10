@@ -34,7 +34,6 @@ def test_jsonl_event_counts_and_uncertainty():
     b'not-json\n',
     encode(event(), event()),
     encode(event(), {**event(2), 'session_id': 'exp002_run01'}),
-    encode({**event(), 'address': '7E3A50'}),
 ])
 def test_bad_capture_rejected(payload):
     with pytest.raises(ValueError):
@@ -48,3 +47,28 @@ def test_empty_rejected_and_ui_upload():
     html = (Path(__file__).resolve().parents[1] / 'backend/static/index.html').read_text(encoding='utf-8')
     assert 'id="erjsonl"' in html
     assert '/api/mesen-bridge/analyze' in html
+
+
+def test_mesen_mixed_wram_address_formats_from_real_exp001():
+    """A same WRAM location may arrive as absolute bus or physical offset."""
+    from backend.mesen_bridge_events import normalize_wram_address
+    payload = encode(
+        event(1, addr='000C0E'),
+        event(2, addr='7E3A50'),
+        event(3, addr='003A50'),
+        event(4, addr='7F0C0E'),
+    )
+    result = analyze_capture_jsonl(payload)
+    observed = {row['address']: row['hits'] for row in result['observed_addresses']}
+    assert observed['WRAM:03A50'] == 2
+    assert observed['WRAM:00C0E'] == 1
+    assert observed['WRAM:10C0E'] == 1
+    assert result['recent_events'][1]['raw_address'] == '7E3A50'
+    assert result['recent_events'][1]['address'] == '03A50'
+    assert normalize_wram_address(0x7F0000) == 0x10000
+
+
+@pytest.mark.parametrize('address', ['800000', '20000', '7DFFFF', 'FFFFFF'])
+def test_out_of_range_wram_rejected(address):
+    with pytest.raises(ValueError):
+        analyze_capture_jsonl(encode(event(addr=address)))
