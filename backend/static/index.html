@@ -55,6 +55,45 @@ function paint(r){
   $('#hrgo').onclick=()=>{if(!$('#cpu'))return;$('#cpu').value=e.pc_canon.replace('$','');goCpu($('#cpu').value);};});
 }
 $('#hrrun').onclick=async()=>{try{const f=$('#hrfile').files[0];if(!f)throw Error('Selecione um arquivo de trace');log('Analisando '+f.name);const d=new FormData();d.append('file',f);const r=await req('hidden-roster/analyze?max_events='+Number($('#hrmax').value),{method:'POST',body:d});window.hrData=r;flt.var=flt.character=flt.access=flt.min='';paint(r);$('#hrstatus').textContent='Trace analisado: '+f.name;log('Hidden Roster: '+r.meta.events+' eventos')}catch(e){$('#hrstatus').textContent='ERRO: '+e.message}};
+
+/* v3 Decision Trace Diff — duas capturas reais, sem alterar a ROM. */
+const diffBox=document.createElement('section');
+diffBox.className='stack';
+diffBox.innerHTML=`<h3>Decision Trace Diff v3 <span class="pill warn">Comparação de evidências</span></h3>
+<p class="foot">Trace A: tentativa bloqueada (Jax → Ermac). Trace B: entrada no slot (Ermac → índice 000A). Use capturas contendo o STA em 86:A7A8 e as instruções anteriores.</p>
+<div class="split"><label>Trace A <input id="ddfilea" type="file" accept=".txt,.log,.trace"></label><label>Trace B <input id="ddfileb" type="file" accept=".txt,.log,.trace"></label></div>
+<div class="split"><label>Ocorrência A <input id="ddorda" type="number" min="1" value="1"></label><label>Ocorrência B <input id="ddordb" type="number" min="1" value="1"></label><label>Instruções anteriores <input id="ddlook" type="number" min="1" max="1000" value="160"></label><button id="ddrun" class="accent">Comparar decisões</button><button id="ddexport">Exportar JSON</button></div>
+<p class="foot" id="ddstatus">Nenhuma comparação realizada.</p><div id="ddout"></div>`;
+$('#mainview').appendChild(diffBox);
+let diffResult=null;
+$('#ddrun').onclick=async()=>{
+ try{
+  const a=$('#ddfilea').files[0],b=$('#ddfileb').files[0];
+  if(!a||!b)throw Error('Selecione dois arquivos de trace.');
+  const fd=new FormData();fd.append('trace_a',a);fd.append('trace_b',b);
+  const path='hidden-roster/decision-diff?ordinal_a='+Number($('#ddorda').value)+'&ordinal_b='+Number($('#ddordb').value)+'&lookback='+Number($('#ddlook').value);
+  const out=await req(path,{method:'POST',body:fd});diffResult=out;
+  const summary=out.summary||{};
+  const lines=[
+   'A: '+(out.a.found?out.a.cursor+' / '+out.a.anchor.pc+' / linha '+out.a.anchor.line:'nenhum STA encontrado'),
+   'B: '+(out.b.found?out.b.cursor+' / '+out.b.anchor.pc+' / linha '+out.b.anchor.line:'nenhum STA encontrado'),
+   'Diferenças de desvio: '+(out.branch_differences||[]).length,
+   'Diferenças totais: '+(out.differences||[]).length,
+   'Não há comprovação automática da causa de bloqueio.'
+  ];
+  const div=$('#ddout');div.replaceChildren();
+  const p=document.createElement('pre');p.style.whiteSpace='pre-wrap';p.textContent=lines.join('\\n');div.appendChild(p);
+  const detail=document.createElement('details');const title=document.createElement('summary');title.textContent='Ver diferenças de execução e registradores';detail.appendChild(title);
+  const pre=document.createElement('pre');pre.style.whiteSpace='pre-wrap';pre.style.maxHeight='390px';pre.style.overflow='auto';pre.textContent=JSON.stringify({branch_differences:out.branch_differences,differences:out.differences},null,2);detail.appendChild(pre);div.appendChild(detail);
+  $('#ddstatus').textContent='Comparação concluída: '+a.name+' × '+b.name;
+ }catch(e){$('#ddstatus').textContent='ERRO: '+e.message;}
+};
+$('#ddexport').onclick=()=>{
+ if(!diffResult){$('#ddstatus').textContent='Compare dois traces antes de exportar.';return;}
+ const blob=new Blob([JSON.stringify(diffResult,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='decision_trace_diff_v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
 if(window.hrData)paint(window.hrData);
 return;}
 if(active==='research'){
