@@ -16,6 +16,7 @@ local wram_points = {0x0C0E, 0x3A50, 0x36D0, 0x52C8, 0x1C59}
 assert(type(emu) == "table", "Mesen Lua API nao encontrada")
 assert(emu.callbackType and emu.callbackType.exec and emu.callbackType.write, "Callbacks nao encontrados")
 assert(emu.memType and emu.memType.snesMemory and emu.memType.snesWorkRam, "Tipos de memoria indisponiveis")
+assert(emu.cpuType and emu.cpuType.snes ~= nil, "CPU SNES indisponivel")
 local output = nil
 if OUTPUT_PATH ~= "" then
   if io == nil then
@@ -67,13 +68,13 @@ for _, addr in ipairs(cpu_points) do
   local watched = addr
   emu.addMemoryCallback(function(address, value)
     record("cpu_execute", address, value, "CPU")
-  end, emu.callbackType.exec, watched, watched, emu.memType.snesMemory)
+  end, emu.callbackType.exec, watched, watched, emu.cpuType.snes, emu.memType.snesMemory)
 end
 for _, addr in ipairs(wram_points) do
   local watched = addr
   emu.addMemoryCallback(function(address, value)
     record("memory_write", address, value, "WRAM")
-  end, emu.callbackType.write, watched, watched, emu.memType.snesWorkRam)
+  end, emu.callbackType.write, watched, watched, emu.cpuType.snes, emu.memType.snesWorkRam)
 end
 emu.log("UMK3 Mesen Bridge v0.1 ativo: " .. SESSION_ID ..
   " | observadores CPU=" .. #cpu_points .. " WRAM=" .. #wram_points ..
