@@ -8,6 +8,19 @@ MAX_BYTES = 16 * 1024 * 1024
 HEX_ADDRESS = re.compile(r"^[0-9A-Fa-f]{1,6}$")
 
 
+def normalize_wram_address(value: int) -> int:
+    """Normalize SNES bus $7E/$7F or 128 KiB physical WRAM offsets.
+
+    Mesen's callback may return an absolute bus address for some mappings
+    and a low physical address for others; keep original addresses too.
+    """
+    if 0x7E0000 <= value <= 0x7FFFFF:
+        value -= 0x7E0000
+    if not 0 <= value <= 0x1FFFF:
+        raise ValueError("Endereço WRAM fora do intervalo físico 00000-1FFFF.")
+    return value
+
+
 def analyze_capture_jsonl(payload: bytes) -> dict:
     if len(payload) > MAX_BYTES:
         raise ValueError("Arquivo excede 16 MiB.")
@@ -60,8 +73,15 @@ def analyze_capture_jsonl(payload: bytes) -> dict:
         if not isinstance(address, str) or not HEX_ADDRESS.fullmatch(address):
             raise ValueError(f"Linha {line_num}: endereço inválido.")
         address_int = int(address, 16)
-        if mem == "WRAM" and address_int > 0x1FFFF:
-            raise ValueError(f"Linha {line_num}: offset WRAM fora de 128 KiB.")
+        raw_address = address.upper().zfill(6)
+        if mem == "WRAM":
+            try:
+                address_int = normalize_wram_address(address_int)
+            except ValueError as exc:
+                raise ValueError(f"Linha {line_num}: {exc}") from exc
+            canonical_address = f"{address_int:05X}"
+        else:
+            canonical_address = f"{address_int:06X}"
         status = event.get("value_after_status")
         if status not in ("confirmed", "derived", "unknown"):
             raise ValueError(f"Linha {line_num}: status inválido.")
@@ -71,15 +91,16 @@ def analyze_capture_jsonl(payload: bytes) -> dict:
         if not isinstance(regs, dict) or len(regs) > 256:
             raise ValueError(f"Linha {line_num}: registers inválidos.")
         counts[kind] += 1
-        touched[mem + ":" + address.upper().zfill(6)] += 1
+        touched[mem + ":" + canonical_address] += 1
         if kind == "cpu_execute":
-            pc_hits[address.upper().zfill(6)] += 1
+            pc_hits[canonical_address] += 1
         if len(recent) >= 100:
             recent.pop(0)
         # Enviar somente os campos previstos (não refletir JSON arbitrário).
         recent.append({
             "seq": seq, "kind": kind, "memory_space": mem,
-            "address": address.upper().zfill(6),
+            "address": canonical_address,
+            "raw_address": raw_address,
             "callback_value": event.get("callback_value"),
             "value_after_status": status,
         })
