@@ -540,3 +540,23 @@ def hidden_roster_export_json(var:str|None=None,character:str|None=None,access:s
 def hidden_roster_export_csv(var:str|None=None,character:str|None=None,access:str|None=None,min_confidence:str|None=None):
     _,ev=_hr_filtered(var,character,access,min_confidence)
     return PlainTextResponse(events_to_csv(ev),media_type='text/csv',headers={'Content-Disposition':'attachment; filename="hidden_roster_timeline.csv"'})
+
+
+# v3.0 — compara duas decisões de navegação; arquivos tratados somente em memória.
+from .decision_trace_diff import compare_traces
+
+@app.post('/api/hidden-roster/decision-diff')
+async def hidden_roster_decision_diff(
+    trace_a: UploadFile = File(...),
+    trace_b: UploadFile = File(...),
+    ordinal_a: int = Query(1, ge=1),
+    ordinal_b: int = Query(1, ge=1),
+    lookback: int = Query(160, ge=1, le=1000),
+):
+    raw_a = await trace_a.read(128 * 1024 * 1024 + 1)
+    raw_b = await trace_b.read(128 * 1024 * 1024 + 1)
+    try:
+        return compare_traces(raw_a, raw_b, ordinal_a=ordinal_a,
+                              ordinal_b=ordinal_b, lookback=lookback)
+    except ValueError as error:
+        raise HTTPException(422, str(error))
