@@ -90,7 +90,7 @@ def main(argv):
     ins('jsl $88c7b6', A=0x0019)
     ins('rtl', pc=0x88C7B6)
     ins('lda $1c59', pc=0x84A3F4, A=0x0019, ea=0x7E1C59, val=0x0019)   # retorno NÃO volta a $FF:FE95 (redirecionamento)
-    open(argv[0] if argv else 'examples/hidden_roster_trace_sintetico.txt', 'w', newline='\n').write('\n'.join(OUT) + '\n')
+    open(argv[0] if argv else 'examples/hidden_roster_trace_sintetico.txt', 'w', encoding='utf-8', newline='\n').write('\n'.join(OUT) + '\n')
 
 
 if __name__ == '__main__':

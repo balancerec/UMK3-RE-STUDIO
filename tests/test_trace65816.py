@@ -245,7 +245,7 @@ def test_synthetic_example_is_reproducible(tmp_path):
     OUT.clear(); PC[0] = 0
     out = tmp_path / 't.txt'
     main([str(out)])
-    assert out.read_text() == EXAMPLE.read_text()
+    assert out.read_text(encoding='utf-8') == EXAMPLE.read_text(encoding='utf-8')
 
 
 def test_graph_distinguishes_executed_from_static():
