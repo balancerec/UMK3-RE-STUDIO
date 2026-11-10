@@ -14,6 +14,12 @@ def test_default_agent_generated():
     assert 'value_after_status":"unknown"' in lua
 
 
+def test_lua_callback_argument_order_explicit_cpu_before_mem_type():
+    lua = generate_capture_script()
+    assert 'emu.callbackType.exec, watched, watched, emu.cpuType.snes, emu.memType.snesMemory)' in lua
+    assert 'emu.callbackType.write, watched, watched, emu.cpuType.snes, emu.memType.snesWorkRam)' in lua
+
+
 def test_extra_start_pc_and_wram_mapping():
     lua = generate_capture_script(
         pc='86A34F',
