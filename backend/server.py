@@ -158,6 +158,15 @@ def translate(cpu:str|None=None,offset:int|None=None):
     if offset is not None:return {'offset':offset,'cpu':f'{file_to_cpu(offset,session.rom.mapping):06X}' if file_to_cpu(offset,session.rom.mapping) is not None else None}
     raise HTTPException(422,'Informe cpu ou offset')
 
+@app.post('/api/mesen-bridge/analyze')
+async def mesen_bridge_analyze(file: UploadFile = File(...)):
+    from .mesen_bridge_events import analyze_capture_jsonl, MAX_BYTES
+    raw = await file.read(MAX_BYTES + 1)
+    try:
+        return analyze_capture_jsonl(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
 @app.get('/api/mesen-bridge/script')
 def mesen_bridge_script(
     pc: str = '86A353',
