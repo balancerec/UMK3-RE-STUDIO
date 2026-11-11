@@ -1,5 +1,10 @@
 # Changelog
 
+## Não lançado — Slot 0x0A (Dragão) v1
+- `backend/dragon_slot.py`: decodificador estático da rotina `$86:A726` (com busca por assinatura para código realocado), leitura das tabelas direcionais, simulador de navegação, alcançabilidade para `$1C57` = 0/1, fatos da máquina de estados de `$1C57`, cadeia de retrato e rodízio.
+- `tools/dragon_slot_report.py`: relatório JSON/Markdown e impacto de um IPS nas regiões do seletor.
+- Testes `tests/test_dragon_slot*.py` (sintéticos; ROM real opcional via `UMK3_ROM`). Documentação em `docs/DRAGON_SLOT_V1.md`. Sem patch de ROM; sem aba nova na interface ainda.
+
 ## Não lançado — Hidden Roster Analyzer v2
 - Novo parser de traces do Mesen 65C816 (`backend/trace65816.py`): endereços de 24 bits, registradores, flags, endereço efetivo, separação de linhas SPC700.
 - Novo analisador (`backend/hidden_roster_analyzer.py`): timeline de `$1C59/$3BAE/$3BB0/$3A50/$36D0/$52C8`, memória sombra, MVN/MVP, detecção de traces incompletos, retornos redirecionados, transições do slot oculto e grafo executado × estático.
