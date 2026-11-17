@@ -274,3 +274,10 @@ Consolidação da v1.0 com pesquisa experimental de compressão gráfica e corre
 **Documentação:** [Instalação](docs/INSTALL.md) · [Arquitetura](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Captura Mesen](docs/MESEN_CAPTURE.md) · [Dossiê](docs/REVERSE_ENGINEERING.md) · [Limitações](docs/KNOWN_LIMITATIONS.md) · [Changelog](docs/CHANGELOG.md).
 
 Execução local: `iniciar-windows.cmd` e http://127.0.0.1:8000. Testes: `python -m pytest -q`. A sessão é global e **não** há autenticação; jamais exponha essa API em rede pública.
+
+## PC Engine Lab — documentação de integração (2026-11-17)
+
+- [Estado do laboratório C++ local, baseline V1.3 e retenção](docs/PC_ENGINE_LAB_LOCAL_STATUS_20261117.md)
+- [Roadmap nativo: Collision Bridge, animação, runtime e Playtest Arena](docs/PC_ENGINE_NATIVE_COMBAT_ROADMAP.md)
+
+**Nota:** a árvore `main` consultada não inclui o código do motor `pc-engine/` utilizado localmente. Estes documentos registram os resultados reportados pelo operador e o plano de publicação futura; não apresentam recursos locais como já versionados neste repositório.
